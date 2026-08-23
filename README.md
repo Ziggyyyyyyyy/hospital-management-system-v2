@@ -27,7 +27,7 @@
 ## 🌐 Live Demo
 
 **Hosted Application:**  
-https://hospital-management-system-v2-8xn50z5s9-aditi-collegehub.vercel.app/
+https://hospital-management-system-v2-ashy.vercel.app/
 
 **Source Code:**  
 https://github.com/Ziggyyyyyyyy/hospital-management-system-v2
