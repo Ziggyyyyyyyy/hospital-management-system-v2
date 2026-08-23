@@ -1,0 +1,88 @@
+'use client'
+
+import React, { useState } from 'react'
+import { PatientDetailsDialog } from '@/components/doctor/patient-details-dialog'
+import AppointmentsTable from '@/components/doctor/appointments-table'
+import MedicineStockTable from '@/components/doctor/medicine-stock-table'
+import RoomAvailabilityTable from '@/components/doctor/free-rooms'
+import DoctorInfoCard from '@/components/doctor/doctor-info'
+import FloatingActionMenu from '@/components/doctor/floating-action-menu'
+import DoctorCalendar from '@/components/doctor/calendar'
+import { getGreeting } from '@/utils/greeting'
+
+// Define proper interface for patient records
+interface PatientRecord {
+  id: string
+  name: string
+  // Add other patient properties as needed
+  [key: string]: any // For any additional properties
+}
+
+export default function DoctorDashboard() {
+  const [patientDetailsOpen, setPatientDetailsOpen] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(
+    null,
+  )
+
+  // Function to handle row click from AppointmentsTable
+  const handlePatientSelect = (patient: PatientRecord) => {
+    setSelectedPatient(patient)
+    setPatientDetailsOpen(true)
+  }
+
+  return (
+    <>
+      <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:py-10">
+        <header className="space-y-1" role="banner">
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl flex items-center gap-2">
+            {getGreeting()} <DoctorInfoCard type="name" />
+          </h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            Manage your patient appointments, clinical consultations, medicine inventory, and department rooms.
+          </p>
+        </header>
+
+        <section
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          aria-label="Doctor workspace"
+        >
+          <div className="lg:col-span-2 space-y-6">
+            <section aria-labelledby="appointments-heading">
+              <h2 id="appointments-heading" className="sr-only">
+                Appointments
+              </h2>
+              <AppointmentsTable onRowClick={handlePatientSelect} />
+            </section>
+
+            <section aria-labelledby="medicine-heading">
+              <h2 id="medicine-heading" className="sr-only">
+                Medicine Stock
+              </h2>
+              <MedicineStockTable />
+            </section>
+
+            <section aria-labelledby="rooms-heading">
+              <h2 id="rooms-heading" className="sr-only">
+                Room Availability
+              </h2>
+              <RoomAvailabilityTable />
+            </section>
+          </div>
+
+          <aside className="space-y-6">
+            <DoctorInfoCard />
+            <DoctorCalendar />
+          </aside>
+        </section>
+
+        <PatientDetailsDialog
+          open={patientDetailsOpen}
+          onOpenChange={setPatientDetailsOpen}
+          patient={selectedPatient}
+        />
+      </div>
+
+      <FloatingActionMenu />
+    </>
+  )
+}

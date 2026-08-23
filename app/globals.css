@@ -1,0 +1,286 @@
+@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  ===========================================================
+  Hospital Management System — Design Tokens
+  Clinical-precision SaaS: calm, high-legibility, trustworthy.
+  Deep teal for primary action, warm amber for secondary
+  emphasis, cool near-white surfaces for long-shift readability.
+  ===========================================================
+*/
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) - 5px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 5px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Status semantics — one consistent language for every state
+     across the app: appointment slots, stock levels, urgency,
+     employment/notification status, etc. */
+  --color-success: var(--status-success);
+  --color-success-foreground: var(--status-success-foreground);
+  --color-success-surface: var(--status-success-surface);
+  --color-warning: var(--status-warning);
+  --color-warning-foreground: var(--status-warning-foreground);
+  --color-warning-surface: var(--status-warning-surface);
+  --color-info: var(--status-info);
+  --color-info-foreground: var(--status-info-foreground);
+  --color-info-surface: var(--status-info-surface);
+  --color-neutral: var(--status-neutral);
+  --color-neutral-foreground: var(--status-neutral-foreground);
+  --color-neutral-surface: var(--status-neutral-surface);
+
+  --color-green: var(--status-success);
+  --color-green-hover: var(--status-success-hover);
+  --color-yellow: var(--status-warning);
+  --color-yellow-hover: var(--status-warning-hover);
+  --color-red: var(--destructive);
+  --color-red-hover: var(--status-danger-hover);
+
+  --shadow-color: var(--shadow-tint);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Surfaces */
+  --background: oklch(0.981 0.003 235);
+  --foreground: oklch(0.19 0.017 246);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.017 246);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.017 246);
+
+  /* Brand — deep clinical teal */
+  --primary: oklch(0.482 0.084 179.5);
+  --primary-foreground: oklch(0.98 0.014 175);
+
+  /* Neutral surfaces */
+  --secondary: oklch(0.955 0.005 250);
+  --secondary-foreground: oklch(0.27 0.02 250);
+  --muted: oklch(0.955 0.005 250);
+  --muted-foreground: oklch(0.478 0.019 248);
+
+  /* Warm amber accent (secondary emphasis, insight surfaces) */
+  --accent: oklch(0.96 0.045 85);
+  --accent-foreground: oklch(0.42 0.1 63);
+
+  --destructive: oklch(0.535 0.19 25.5);
+  --destructive-foreground: oklch(0.98 0.012 20);
+
+  --border: oklch(0.913 0.007 250);
+  --input: oklch(0.913 0.007 250);
+  --ring: oklch(0.482 0.084 179.5);
+
+  /* Status language */
+  --status-success: oklch(0.52 0.125 155);
+  --status-success-hover: oklch(0.46 0.125 155);
+  --status-success-foreground: oklch(0.98 0.02 155);
+  --status-success-surface: oklch(0.955 0.035 155);
+
+  --status-warning: oklch(0.585 0.135 70);
+  --status-warning-hover: oklch(0.52 0.135 70);
+  --status-warning-foreground: oklch(0.98 0.02 85);
+  --status-warning-surface: oklch(0.96 0.05 85);
+
+  --status-danger: oklch(0.535 0.19 25.5);
+  --status-danger-hover: oklch(0.47 0.19 25.5);
+  --status-danger-surface: oklch(0.96 0.035 25);
+
+  --status-info: oklch(0.52 0.11 245);
+  --status-info-foreground: oklch(0.98 0.015 245);
+  --status-info-surface: oklch(0.955 0.03 245);
+
+  --status-neutral: oklch(0.478 0.019 248);
+  --status-neutral-foreground: oklch(0.98 0.003 250);
+  --status-neutral-surface: oklch(0.955 0.005 250);
+
+  /* Charts — retinted to the palette family (teal / amber / blue / plum / slate) */
+  --chart-1: oklch(0.482 0.084 179.5);
+  --chart-2: oklch(0.585 0.135 70);
+  --chart-3: oklch(0.52 0.11 245);
+  --chart-4: oklch(0.55 0.11 320);
+  --chart-5: oklch(0.6 0.02 250);
+
+  --sidebar: oklch(0.99 0.002 250);
+  --sidebar-foreground: oklch(0.19 0.017 246);
+  --sidebar-primary: oklch(0.482 0.084 179.5);
+  --sidebar-primary-foreground: oklch(0.98 0.014 175);
+  --sidebar-accent: oklch(0.955 0.005 250);
+  --sidebar-accent-foreground: oklch(0.27 0.02 250);
+  --sidebar-border: oklch(0.913 0.007 250);
+  --sidebar-ring: oklch(0.482 0.084 179.5);
+
+  /* Cool-tinted ambient shadows instead of flat black */
+  --shadow-tint: 205 30% 20%;
+}
+
+.dark {
+  --background: oklch(0.175 0.014 240);
+  --foreground: oklch(0.955 0.006 250);
+  --card: oklch(0.222 0.015 240);
+  --card-foreground: oklch(0.955 0.006 250);
+  --popover: oklch(0.222 0.015 240);
+  --popover-foreground: oklch(0.955 0.006 250);
+
+  --primary: oklch(0.685 0.11 175);
+  --primary-foreground: oklch(0.15 0.02 190);
+
+  --secondary: oklch(0.28 0.015 240);
+  --secondary-foreground: oklch(0.93 0.006 250);
+  --muted: oklch(0.28 0.015 240);
+  --muted-foreground: oklch(0.665 0.017 245);
+
+  --accent: oklch(0.28 0.035 75);
+  --accent-foreground: oklch(0.82 0.09 80);
+
+  --destructive: oklch(0.62 0.18 25.5);
+  --destructive-foreground: oklch(0.15 0.02 20);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.685 0.11 175);
+
+  --status-success: oklch(0.68 0.135 155);
+  --status-success-hover: oklch(0.74 0.135 155);
+  --status-success-foreground: oklch(0.15 0.02 155);
+  --status-success-surface: oklch(0.28 0.045 155);
+
+  --status-warning: oklch(0.75 0.13 80);
+  --status-warning-hover: oklch(0.8 0.13 80);
+  --status-warning-foreground: oklch(0.17 0.02 85);
+  --status-warning-surface: oklch(0.3 0.05 80);
+
+  --status-danger: oklch(0.62 0.18 25.5);
+  --status-danger-hover: oklch(0.68 0.18 25.5);
+  --status-danger-surface: oklch(0.3 0.045 25);
+
+  --status-info: oklch(0.68 0.1 245);
+  --status-info-foreground: oklch(0.15 0.02 245);
+  --status-info-surface: oklch(0.28 0.04 245);
+
+  --status-neutral: oklch(0.665 0.017 245);
+  --status-neutral-foreground: oklch(0.15 0.005 250);
+  --status-neutral-surface: oklch(0.28 0.015 240);
+
+  --chart-1: oklch(0.685 0.11 175);
+  --chart-2: oklch(0.75 0.13 80);
+  --chart-3: oklch(0.68 0.1 245);
+  --chart-4: oklch(0.7 0.1 320);
+  --chart-5: oklch(0.75 0.015 250);
+
+  --sidebar: oklch(0.2 0.014 240);
+  --sidebar-foreground: oklch(0.955 0.006 250);
+  --sidebar-primary: oklch(0.685 0.11 175);
+  --sidebar-primary-foreground: oklch(0.15 0.02 190);
+  --sidebar-accent: oklch(0.28 0.015 240);
+  --sidebar-accent-foreground: oklch(0.93 0.006 250);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.685 0.11 175);
+
+  --shadow-tint: 210 40% 3%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings:
+      'cv02',
+      'cv03',
+      'cv04',
+      'cv11';
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+  ::selection {
+    @apply bg-primary/15;
+  }
+}
+
+@layer utilities {
+  /* Soft, cool-tinted elevation — a premium alternative to flat
+     black box-shadows. Use instead of the default shadow-* scale
+     wherever a surface needs to feel "lifted". */
+  .shadow-elevation-sm {
+    box-shadow:
+      0 1px 2px -1px hsl(var(--shadow-color) / 0.06),
+      0 1px 3px 0 hsl(var(--shadow-color) / 0.05);
+  }
+  .shadow-elevation-md {
+    box-shadow:
+      0 4px 10px -4px hsl(var(--shadow-color) / 0.1),
+      0 2px 6px -2px hsl(var(--shadow-color) / 0.06);
+  }
+  .shadow-elevation-lg {
+    box-shadow:
+      0 16px 32px -12px hsl(var(--shadow-color) / 0.16),
+      0 4px 10px -4px hsl(var(--shadow-color) / 0.08);
+  }
+
+  /* Status dot — the one recurring visual signature used
+     everywhere the app shows state (slots, stock, urgency,
+     employment/notification status). */
+  .status-dot {
+    @apply inline-block size-2 rounded-full shrink-0;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
