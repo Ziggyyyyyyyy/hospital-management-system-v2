@@ -17,15 +17,15 @@ The system is designed as a production-oriented implementation rather than a sim
 
 ---
 
-# 🌐 Live Demo
+## 🌐 Live Demo
 
-### Hosted Application
+### 🚀 Hosted Application
 
-**https://hospital-management-system-v2-ashy.vercel.app**
+**[Open HMS Live Demo](https://hospital-management-system-v2-ashy.vercel.app/)**
 
-### Source Code
+### 💻 Source Code
 
-**https://github.com/Ziggyyyyyyyy/hospital-management-system-v2**
+**[GitHub Repository](https://github.com/Ziggyyyyyyyy/hospital-management-system-v2)**
 
 The application is deployed on **Vercel** and uses **Supabase PostgreSQL and authentication**.
 
@@ -48,7 +48,7 @@ A reliable healthcare platform needs to handle:
 - Role-specific access to sensitive healthcare workflows
 - Pharmacy, admissions, records and billing operations
 
-The Hospital Management System brings these workflows together into a single role-based platform.
+The **Hospital Management System (HMS)** brings these workflows together into a single role-based platform.
 
 ### Core Design Principle
 
@@ -62,7 +62,7 @@ The platform provides dedicated workspaces for five operational roles.
 
 | Role | Responsibilities |
 |---|---|
-| 👤 **Patient** | Doctor discovery, symptom intake, appointment booking, records, billing |
+| 👤 **Patient** | Doctor discovery, symptom intake, appointment booking, records and billing |
 | 👨‍⚕️ **Doctor** | Availability, leave, consultations, prescriptions and patient records |
 | 👩‍⚕️ **Nurse** | Admissions, assigned patients and inpatient workflows |
 | 💊 **Pharmacist** | Medicine inventory, dispensing and stock management |
@@ -94,12 +94,7 @@ Appointment booking is the most concurrency-sensitive workflow in the applicatio
 A naive implementation such as:
 
 ```text
-check slot availability
-        ↓
-insert appointment
-is unsafe.
-
-Two patients can read the same available slot before either request commits.
+is unsafe because two patients can read the same available slot before either request commits.
 
 The system therefore uses database-level concurrency control.
 
@@ -153,23 +148,38 @@ This ensures simultaneous booking attempts are handled deterministically.
 Before final appointment confirmation, a selected slot can be temporarily held.
 
 Default Hold Duration
+
 5 minutes
 
 The hold prevents another patient from acquiring the same slot while the current patient completes the booking process.
 
 Hold Lifecycle
-AVAILABLE
-    │
-    ▼
-HELD
-    │
-    ├───────────────┐
-    │               │
-Confirm          Expire
-    │               │
-    ▼               ▼
- BOOKED          AVAILABLE
+Double-Booking Prevention
 
+The system uses:
+
+PostgreSQL advisory locks
+Row-level locking
+Transactional operations
+Atomic database RPCs
+Slot ownership validation
+Temporary hold expiration
+Idempotent booking confirmation
+Appointment state-transition validation
+
+This ensures simultaneous booking attempts are handled deterministically.
+
+⏱️ 4. Temporary Slot Hold Mechanism
+
+Before final appointment confirmation, a selected slot can be temporarily held.
+
+Default Hold Duration
+
+5 minutes
+
+The hold prevents another patient from acquiring the same slot while the current patient completes the booking process.
+
+Hold Lifecycle
 Important properties:
 
 Hold belongs to a specific user/session
@@ -198,9 +208,7 @@ Slots are generated according to the configured availability.
 Doctor leave becomes more complex when appointments already exist for the affected date.
 
 The system does not simply mark the doctor unavailable.
-
 Instead:
-
 Doctor Leave Created
         │
         ▼
@@ -216,15 +224,12 @@ Conflict Resolution
         │
         ▼
 Patient Notifications
-
 This prevents a state where:
-
 Doctor = ON LEAVE
         +
 Appointment = ACTIVE
         +
 Patient = NOT INFORMED
-
 The leave workflow therefore explicitly handles existing appointment conflicts.
 
 🤖 6. AI-Assisted Clinical Documentation
@@ -233,19 +238,17 @@ Google Gemini is integrated into two clinical documentation workflows.
 
 🧠 Pre-Visit AI Summary
 
-Before confirming an appointment, the patient can provide symptom information.
+Before an appointment, the patient can provide symptom information.
 
-The system uses the information to generate a structured pre-visit summary for the doctor.
+The system uses this information to generate a structured pre-visit summary for the doctor.
 
-Output
+Structured Output
 Urgency Level
 Chief Complaint
 Suggested Questions
-
-The intended output structure is:
-
+The expected structure is:
 {
-  "urgency": "Low | Medium | High",
+  "urgency": "LOW | MEDIUM | HIGH",
   "chief_complaint": "...",
   "suggested_questions": [
     "...",
@@ -253,8 +256,7 @@ The intended output structure is:
     "..."
   ]
 }
-
-The generated summary is stored in the database and associated with the appointment.
+The generated summary is persisted and associated with the relevant appointment.
 
 The AI is used as a documentation and preparation aid, not as a replacement for clinical judgment.
 
@@ -264,19 +266,33 @@ After a consultation, the doctor can provide:
 
 Clinical notes
 Diagnosis
-Treatment information
 Prescription information
 Follow-up instructions
 
 Gemini converts the clinical information into a patient-friendly summary.
 
-Output
+Structured Output
+The generated summary is persisted and associated with the relevant appointment.
+
+The AI is used as a documentation and preparation aid, not as a replacement for clinical judgment.
+
+📝 Post-Visit AI Summary
+
+After a consultation, the doctor can provide:
+
+Clinical notes
+Diagnosis
+Prescription information
+Follow-up instructions
+
+Gemini converts the clinical information into a patient-friendly summary.
+
+Structured Output
 Visit Explanation
 Medication Schedule
 Follow-Up Steps
 Instructions
-
-The generated result is stored for later access by the patient.
+The generated result is persisted for later access by the patient.
 
 🛡️ 7. LLM Failure Handling
 
@@ -284,7 +300,7 @@ AI is intentionally treated as a non-critical external dependency.
 
 An AI failure must not break the appointment or clinical workflow.
 
-The system handles scenarios such as:
+The system handles:
 
 Missing Gemini API key
 Provider/API failure
@@ -293,7 +309,7 @@ Invalid model response
 Malformed JSON
 Unexpected output format
 Schema validation failure
-AI processing timeout
+AI processing failure
 Patient AI-consent opt-out
 Failure Isolation
 Healthcare Workflow
@@ -312,10 +328,13 @@ Healthcare Workflow
     │        │
     ▼        ▼
  Continue   Graceful Fallback
+AI output is validated before persistence using runtime schemas.
 
-AI output is validated before persistence.
+Malformed model responses therefore cannot directly corrupt persisted application data.
 
-This prevents malformed model responses from corrupting application data.
+Detailed AI prompt workflows are documented in:
+
+docs/LLM_PROMPTS.md
 
 📬 8. Reliable Notification System
 
@@ -333,7 +352,6 @@ Medication reminders
 🔄 Notification Outbox Pattern
 
 Instead of making the main appointment transaction depend on email delivery:
-
 Appointment Transaction
         │
         ▼
@@ -351,20 +369,17 @@ Notification Processor
               │
               ▼
        Exponential Backoff
-
 A provider failure therefore does not roll back a successfully created appointment.
 
 Failure Tracking
 
-Notifications can track information such as:
-
+Notifications can track:
 status
 attempt count
 last attempt
 next retry
 deduplication key
 provider message ID
-
 This provides a reliable foundation for retry processing and prevents unnecessary duplicate notifications.
 
 📆 9. Google Calendar Integration
@@ -381,18 +396,16 @@ Google Calendar Event
         └── Doctor
 Rescheduling
 
-When an appointment is rescheduled, the corresponding calendar event is updated.
+When an appointment is rescheduled, the corresponding Google Calendar event is updated.
 
 Cancellation
 
-When an appointment is cancelled, the corresponding calendar event is removed.
+When an appointment is cancelled, the corresponding Google Calendar event is removed.
 
 OAuth Security
 
 OAuth-related tokens are encrypted using:
-
 AES-256-GCM
-
 before being persisted.
 
 Google Calendar operations are isolated from the critical appointment transaction so external API failures do not invalidate the appointment itself.
@@ -406,15 +419,11 @@ The pharmacy module supports:
 
 Medicine inventory
 Stock categorization
-Stock monitoring
-Low-stock detection
+Low-stock monitoring
 Prescription-based dispensing
 Restocking workflows
 Inventory transaction tracking
 Medication reminders
-
-Medication reminders are generated according to prescription frequency.
-
 💳 11. Billing & Invoicing
 
 The billing module supports:
@@ -426,9 +435,6 @@ Laboratory charges
 Multiple billing items
 Invoice management
 Payment status tracking
-
-Billing is integrated with the wider patient and hospital workflow.
-
 🏥 12. Admissions & Inpatient Workflows
 
 The system supports inpatient operational workflows including:
@@ -454,7 +460,6 @@ Medicine consumption
 Operational statistics
 
 Analytics are exposed through dedicated API endpoints.
-
 🏗️ 14. System Architecture
                          ┌──────────────────────────┐
                          │      Client Layer        │
@@ -493,10 +498,10 @@ Analytics are exposed through dedicated API endpoints.
               │ State Transition Guards                    │
               └─────────────────────┬──────────────────────┘
                                     │
-               ┌────────────────────┼─────────────────────┐
-               ▼                    ▼                     ▼
-        Google Gemini          Email Provider       Google Calendar
-             AI                 Resend/etc.             OAuth/API
+                 ┌──────────────────┼──────────────────┐
+                 ▼                  ▼                  ▼
+          Google Gemini       Email Provider      Google Calendar
+              AI              Resend/etc.             OAuth/API
 🧩 15. Backend Module Structure
 Module	Responsibility
 Authentication	Identity and session management
@@ -530,7 +535,7 @@ Row Level Security
 PostgreSQL functions
 Atomic concurrency RPCs
 Appointment state-transition protection
-Important Entities
+Core Entities
 users
 patients
 medical_staff
@@ -549,7 +554,6 @@ post_visit_notes
 post_visit_summaries
 
 medical_records
-treatments
 prescriptions
 prescription_items
 
@@ -567,8 +571,7 @@ notifications
 user_oauth_tokens
 calendar_events
 audit_logs
-
-Detailed schema:
+Detailed database documentation:
 
 docs/DATABASE.md
 🔌 17. API Documentation
@@ -633,19 +636,35 @@ Pre-visit prompt
 Post-visit prompt
 Input structure
 Expected output
-Validation schema
+Validation schemas
 Persistence behavior
 Failure handling
 Notification behavior
-Pre-Visit Prompt Objective
-Analyse the patient's symptoms and return:
-
-1. Urgency level
-2. Chief complaint
-3. Three suggested questions for the doctor
-Post-Visit Prompt Objective
-Convert clinical notes into a patient-friendly summary
-containing medication schedule and follow-up steps.
+Pre-Visit AI
+Patient Symptoms
+      ↓
+LLM Processing
+      ↓
+Urgency
+Chief Complaint
+3 Suggested Questions
+      ↓
+Validated Structured Output
+      ↓
+Database Persistence
+Post-Visit AI
+Clinical Notes
+Diagnosis
+Prescription
+Follow-Up Instructions
+      ↓
+LLM Processing
+      ↓
+Patient-Friendly Summary
+      ↓
+Validated Structured Output
+      ↓
+Database Persistence
 🔐 19. Security Design
 
 Healthcare systems require careful handling of authentication, authorization and sensitive data.
@@ -663,71 +682,102 @@ Idempotency protection
 PostgreSQL advisory locks
 Transactional state transitions
 Encrypted OAuth token storage
-Audit logging
 Environment-based secret management
+Audit logging
 Secret Management
 
 Real credentials are never committed to source control.
 
 The repository contains:
-
 .env.example
-
 only as a configuration template.
 
 Actual credentials belong in local environment configuration or the deployment platform's environment variable manager.
 
-⚙️ 20. Background Processing
+⚙️ 20. Reliability & Failure Isolation
 
-The application separates recurring/background operations from critical user transactions.
+The system separates critical transactional workflows from external integrations.
 
-Notification Retry Processing
-/api/notifications/retry
+Critical Operations
 
-Handles failed notification attempts.
+These must remain consistent:
 
-Stale Slot Holds
+Slot holds
+Appointment confirmation
+Appointment cancellation
+Appointment rescheduling
+Doctor leave processing
+Database state transitions
+Non-Critical External Operations
 
-Expired appointment holds are cleaned so abandoned booking sessions do not permanently reserve slots.
+These may fail without invalidating core state:
 
-Medication Reminders
+AI generation
+Email delivery
+Google Calendar synchronization
 
-Prescription frequency is used to determine medication reminder processing.
+This creates the following reliability boundary:
+                 CORE TRANSACTION
+                       │
+              ┌────────┴────────┐
+              │                 │
+        Database State      Outbox/Event
+              │                 │
+              ▼                 ▼
+        COMMIT SUCCESS      External Worker
+                                │
+                    ┌───────────┼───────────┐
+                    ▼           ▼           ▼
+                   AI         Email      Calendar
+                    │           │           │
+                 Failure     Failure     Failure
+                    │           │           │
+                    └───────────┴───────────┘
+                                │
+                                ▼
+                         Retry / Record Failure
+🧪 21. Testing & Quality Checks
 
-This separation improves reliability because slow or unavailable external providers do not block core healthcare operations.
+Run the test suite:
 
-🛠️ 21. Technology Stack
-Frontend
-Next.js 16
-React 19
-TypeScript
-Tailwind CSS
-Backend
-Next.js Route Handlers
-Server-side domain services
-Zod validation
-Database & Authentication
-Supabase
-PostgreSQL
-Row Level Security
-PostgreSQL RPCs
-Transactions
-Advisory Locks
-AI
-Google Gemini
-@google/genai
-Structured output validation
-Integrations
-Resend / email provider
-Google Calendar API
-Google OAuth 2.0
-Testing & Quality
-Vitest
-TypeScript
-ESLint
-Deployment
-Vercel
-🚀 22. Local Setup
+npm test
+
+Run TypeScript validation:
+
+npx tsc --noEmit
+
+Run linting:
+
+npm run lint
+
+Create a production build:
+
+npm run build
+
+The production build validates:
+
+TypeScript compilation
+Next.js compilation
+Route generation
+Static page generation
+Server-side modules
+Production bundling
+📦 22. Demo Dataset
+
+The repository contains scripts for creating and cleaning demonstration data.
+
+Seed Demo Data
+npx tsx scripts/seed-demo-dataset.ts
+Clean Demo Data
+npx tsx scripts/clean-demo-dataset.ts
+
+A SQL seed file is also available:
+
+supabase/demo_seed.sql
+
+These files allow the application to be demonstrated without manually creating every record.
+
+🚀 23. Local Setup
 Prerequisites
 
 Install:
@@ -741,14 +791,11 @@ git clone https://github.com/Ziggyyyyyyyy/hospital-management-system-v2.git
 cd hospital-management-system-v2
 Install Dependencies
 npm install
-Configure Environment Variables
-
-Create a local environment file.
-
-macOS / Linux
-cp .env.example .env.local
+Configure Environment
 Windows PowerShell
 Copy-Item .env.example .env.local
+macOS / Linux
+cp .env.example .env.local
 
 Then configure the required values inside:
 
@@ -756,11 +803,18 @@ Then configure the required values inside:
 
 Never commit .env.local.
 
-🔑 23. Environment Variables
+Start Development Server
+npm run dev
+
+The application will be available locally at:
+
+http://localhost:3000
+🔑 24. Environment Variables
 
 All required configuration variables are documented in:
 
 .env.example
+
 Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -791,7 +845,7 @@ MEDICATION_REMINDER_LOOKAHEAD_MINUTES=
 
 Never put real API keys, passwords, OAuth secrets or encryption keys inside .env.example or Git.
 
-📆 24. Google Calendar Setup
+📆 25. Google Calendar Setup
 
 Google Calendar integration requires:
 
@@ -802,54 +856,19 @@ OAuth 2.0 credentials
 Authorized redirect URI
 Required environment variables
 
-Detailed instructions are available in:
+Detailed instructions:
 
 docs/GOOGLE_CALENDAR_SETUP.md
-🧪 25. Testing & Quality Checks
 
-Run tests:
+The integration supports:
 
-npm test
-
-Run TypeScript validation:
-
-npx tsc --noEmit
-
-Run linting:
-
-npm run lint
-
-Create production build:
-
-npm run build
-
-The production build validates:
-
-TypeScript compilation
-Next.js compilation
-Route generation
-Static page generation
-Server-side modules
-Production bundling
-📦 26. Demo Dataset
-
-The repository contains scripts for creating and cleaning demonstration data.
-
-Seed demo data:
-
-npx tsx scripts/seed-demo-dataset.ts
-
-Clean demo data:
-
-npx tsx scripts/clean-demo-dataset.ts
-
-A SQL seed file is also available:
-
-supabase/demo_seed.sql
-
-These files allow the application to be demonstrated without manually creating every record.
-
-🏗️ 27. Production Deployment
+Offline OAuth authorization
+Access token refresh
+Encrypted refresh token storage
+Calendar event creation
+Event updates
+Event deletion
+🏗️ 26. Production Deployment
 
 The application is deployed using Vercel.
 
@@ -857,7 +876,7 @@ Deployment Flow
 GitHub Repository
        │
        ▼
-Vercel
+     Vercel
        │
        ├── Install Dependencies
        ├── Build Next.js Application
@@ -866,7 +885,11 @@ Vercel
               │
               ▼
         Production HMS
-Deployment Steps
+Current Production URL
+
+https://hospital-management-system-v2-ashy.vercel.app/
+
+Deployment Configuration
 Import the GitHub repository into Vercel.
 Select the Next.js framework preset.
 Configure environment variables.
@@ -875,16 +898,16 @@ Configure Gemini credentials if AI is enabled.
 Configure email provider credentials.
 Configure Google OAuth redirect URI if Calendar integration is enabled.
 Deploy.
-📚 28. Project Documentation
+📚 27. Project Documentation
 File	Purpose
 README.md	Complete project overview and setup
 docs/API.md	API endpoint documentation
 docs/DATABASE.md	Database schema and database logic
 docs/LLM_PROMPTS.md	AI prompt workflows and validation
 docs/GOOGLE_CALENDAR_SETUP.md	Google OAuth and Calendar setup
-docs/SYSTEM_DESIGN.md	Key architecture and reliability decisions
+docs/SYSTEM_DESIGN.md	Architecture and reliability decisions
 .env.example	Environment configuration template
-📐 29. System Design Highlights
+📐 28. System Design Highlights
 
 The system design focuses on four high-risk workflows.
 
@@ -892,11 +915,11 @@ Double-Booking Prevention
 
 Appointment booking is protected using transactional database operations, advisory locking, row-level locking, temporary slot holds and idempotent confirmation.
 
-Doctor Leave Conflicts
+Doctor Leave Conflict Handling
 
 Doctor leave triggers conflict detection for existing appointments. Affected appointments are identified and patients can be notified rather than leaving inconsistent scheduling state.
 
-Slot Holds
+Slot Hold Mechanism
 
 Selected slots are temporarily held for a limited duration. Holds are ownership-aware and expire automatically, preventing abandoned booking sessions from blocking availability.
 
@@ -907,9 +930,10 @@ Notifications are persisted independently from core transactions. Failed deliver
 Full system design:
 
 docs/SYSTEM_DESIGN.md
-🎥 30. Assignment Deliverables
 
-This repository includes the required assignment deliverables:
+📦 29. Assignment Deliverables
+
+This repository contains the requested deliverables:
 
 1. Complete Source Code
 
@@ -928,19 +952,19 @@ Google Calendar setup
 System design
 3. Hosted Application
 
-https://hospital-management-system-v2-ashy.vercel.app
+https://hospital-management-system-v2-ashy.vercel.app/
 
 4. System Design
 
-The system design write-up covers:
+The system design covers:
 
 Double-booking prevention
 Doctor leave conflict handling
 Slot hold mechanism
 Notification failure handling
-📌 31. Engineering Decisions
+🧠 30. Engineering Decisions
 
-This project intentionally focuses on engineering problems that are easy to get wrong in real-world systems.
+This project focuses on engineering problems that are easy to get wrong in real-world systems.
 
 Concurrency
 
@@ -954,9 +978,9 @@ Reliability
 
 External email, AI and Calendar services are isolated from core appointment transactions.
 
-AI Safety
+AI Validation
 
-LLM output is validated before being stored, and AI failures are handled gracefully.
+LLM output is validated before persistence, and AI failures are handled without blocking core healthcare workflows.
 
 Data Consistency
 
@@ -969,7 +993,52 @@ Authentication, RBAC, RLS, ownership validation, encrypted OAuth credentials and
 Integration Resilience
 
 External services are treated as unreliable dependencies rather than trusted components of the core transaction.
-
+📁 31. Repository Structure
+hospital-management-system-v2/
+│
+├── app/
+│   ├── admin/
+│   ├── doctor/
+│   ├── nurse/
+│   ├── patient/
+│   ├── pharmacy/
+│   └── api/
+│
+├── components/
+│   ├── admin/
+│   ├── appointments/
+│   ├── doctor/
+│   ├── nurse/
+│   ├── patient/
+│   ├── pharmacy/
+│   └── shell/
+│
+├── lib/
+│   ├── ai/
+│   ├── appointments/
+│   ├── calendar/
+│   ├── crypto/
+│   ├── medications/
+│   └── ...
+│
+├── docs/
+│   ├── API.md
+│   ├── DATABASE.md
+│   ├── GOOGLE_CALENDAR_SETUP.md
+│   ├── LLM_PROMPTS.md
+│   └── SYSTEM_DESIGN.md
+│
+├── scripts/
+│   ├── clean-demo-dataset.ts
+│   └── seed-demo-dataset.ts
+│
+├── supabase/
+│   └── demo_seed.sql
+│
+├── .env.example
+├── package.json
+├── README.md
+└── tsconfig.json
 ⚠️ 32. Clinical Disclaimer
 
 This project is an educational software implementation and is not a medical diagnosis or treatment system.
@@ -985,19 +1054,14 @@ B.Tech Computer Science & Engineering
 VIT Bhopal University
 
 ⭐ Project Focus
-
-This project goes beyond basic CRUD functionality by focusing on:
-
 Concurrency
      +
 Reliability
      +
-AI-assisted workflows
+AI-Assisted Workflows
      +
-Secure authorization
+Secure Authorization
      +
-Database consistency
+Database Consistency
      +
-External API resilience
-
-Designed to demonstrate how a healthcare application can remain consistent and reliable even when multiple users and external services interact with the same critical workflows.
+External API Resilience
