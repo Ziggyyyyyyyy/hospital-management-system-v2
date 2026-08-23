@@ -102,9 +102,9 @@ export default function AppointmentBookingFlow() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Specialty</label>
             <Select
-              value={selectedSpecialty ?? ''}
+              value={selectedSpecialty ?? 'all'}
               onValueChange={(v) => {
-                setSelectedSpecialty(v || null)
+                setSelectedSpecialty(v === 'all' ? null : v)
                 setSelectedDoctor(null)
               }}
             >
@@ -112,7 +112,7 @@ export default function AppointmentBookingFlow() {
                 <SelectValue placeholder="All specialties" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All specialties</SelectItem>
+                <SelectItem value="all">All specialties</SelectItem>
                 {specialties.map((s) => (
                   <SelectItem
                     key={s.specialty_id}
@@ -127,8 +127,9 @@ export default function AppointmentBookingFlow() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Doctor</label>
             <Select
-              value={selectedDoctor ? String(selectedDoctor.staff_id) : ''}
+              value={selectedDoctor ? String(selectedDoctor.staff_id) : undefined}
               onValueChange={(v) => {
+                if (v === 'none') return
                 const d = doctors.find(
                   (doc) => String(doc.staff_id) === v,
                 )
@@ -141,22 +142,23 @@ export default function AppointmentBookingFlow() {
                 <SelectValue placeholder="Pick a doctor" />
               </SelectTrigger>
               <SelectContent>
-                {filteredDoctors.length === 0 && (
-                  <SelectItem value="" disabled>
+                {filteredDoctors.length === 0 ? (
+                  <SelectItem value="none" disabled>
                     No doctors available
                   </SelectItem>
+                ) : (
+                  filteredDoctors.map((d) => (
+                    <SelectItem key={d.staff_id} value={String(d.staff_id)}>
+                      {d.full_name || `Doctor #${d.staff_id}`}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {(d.doctor_specialties ?? [])
+                          .map((ds: any) => ds.specialty?.name)
+                          .filter(Boolean)
+                          .join(', ')}
+                      </span>
+                    </SelectItem>
+                  ))
                 )}
-                {filteredDoctors.map((d) => (
-                  <SelectItem key={d.staff_id} value={String(d.staff_id)}>
-                    {d.full_name || `Doctor #${d.staff_id}`}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {(d.doctor_specialties ?? [])
-                        .map((ds: any) => ds.specialty?.name)
-                        .filter(Boolean)
-                        .join(', ')}
-                    </span>
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>

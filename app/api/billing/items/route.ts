@@ -16,27 +16,52 @@ type ItemBody = {
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => null)) as ItemBody | null
+  const rawBody = (await req.json().catch(() => null)) as Record<string, any> | null
+
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json(
+      { error: 'Missing or invalid fields.' },
+      { status: 400 },
+    )
+  }
+
+  const bill_id = Number(rawBody.bill_id)
+  const item_type = typeof rawBody.item_type === 'string' ? rawBody.item_type : ''
+  const item_id_ref = Number(rawBody.item_id_ref)
+  const description = typeof rawBody.description === 'string' ? rawBody.description.trim() : ''
+  const quantity = Number(rawBody.quantity)
+  const unit_price = Number(rawBody.unit_price)
 
   if (
-    !body ||
-    typeof body.bill_id !== 'number' ||
-    typeof body.item_type !== 'string' ||
-    typeof body.item_id_ref !== 'number' ||
-    typeof body.description !== 'string' ||
-    typeof body.quantity !== 'number' ||
-    typeof body.unit_price !== 'number'
+    !bill_id ||
+    isNaN(bill_id) ||
+    !item_type ||
+    !['Medicine', 'Treatment', 'Room'].includes(item_type) ||
+    !item_id_ref ||
+    isNaN(item_id_ref) ||
+    !description ||
+    isNaN(quantity) ||
+    isNaN(unit_price)
   ) {
     return NextResponse.json(
       { error: 'Missing or invalid fields.' },
       { status: 400 },
     )
   }
-  if (body.quantity <= 0 || body.unit_price < 0) {
+  if (quantity <= 0 || unit_price < 0) {
     return NextResponse.json(
       { error: 'Quantity must be > 0 and price >= 0.' },
       { status: 400 },
     )
+  }
+
+  const body: ItemBody = {
+    bill_id,
+    item_type: item_type as 'Medicine' | 'Treatment' | 'Room',
+    item_id_ref,
+    description,
+    quantity,
+    unit_price,
   }
 
   const { session, errorResponse } = await requireApiAuth(['Admin'])

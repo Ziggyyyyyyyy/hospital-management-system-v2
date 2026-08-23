@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getUserRole } from '@/utils/get-role'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 
-// GET /api/admin/staff → List all staff by type
+// GET /api/admin/user → List all users who can be assigned as staff
 export async function GET(req: Request) {
   const result = await getUserRole()
   if (!result)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { role, userId } = result
+  const { role } = result
   if (role !== 'Admin') {
     return NextResponse.json(
       { error: 'Forbidden: Admin only' },
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   const staffType = new URL(req.url).searchParams.get('type')
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: medicalStaff, error: medicalStaffError } = await supabase
     .from('medical_staff')
@@ -32,8 +32,8 @@ export async function GET(req: Request) {
 
   const excludedUserIds =
     medicalStaff && medicalStaff.length > 0
-      ? `(${medicalStaff.map((staff: any) => staff.user_id).join(',')})`
-      : '(NULL)'
+      ? `(${medicalStaff.map((staff: any) => staff.user_id).filter(Boolean).join(',')})`
+      : '(00000000-0000-0000-0000-000000000000)'
 
   let query = supabase
     .from('users')

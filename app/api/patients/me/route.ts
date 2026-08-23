@@ -79,6 +79,7 @@ export async function PATCH(req: Request) {
     .from('users')
     .update({ phone_number })
     .eq('user_id', userId)
+    .select()
     .single()
 
   if (error) {

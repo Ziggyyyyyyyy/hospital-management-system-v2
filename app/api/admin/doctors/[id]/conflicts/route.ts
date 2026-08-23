@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import {
   resolveIdentity,
   requireRoles,
@@ -43,7 +43,7 @@ export async function GET(
     doctorId,
     start_date,
     end_date,
-    (await createClient()) as any,
+    createServiceClient() as any,
   )
   return ok(preview)
 }

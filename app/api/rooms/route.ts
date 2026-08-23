@@ -7,12 +7,11 @@
 // /api/rooms?type=Operating&available=false&department=5
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
 const validRoomTypes = ['General', 'ICU', 'Private', 'Emergency']
 
 export async function GET(req: Request) {
-  const supabase = await createClient()
   const result = await getUserRole()
 
   if (!result) {
@@ -27,6 +26,12 @@ export async function GET(req: Request) {
       { status: 403 },
     )
   }
+
+  // The rooms/medical_staff/departments RLS policies are self-referential
+  // and exceed the PostgreSQL stack depth for authenticated sessions (SQLSTATE 54001).
+  // Caller authorization and role filtering are strictly enforced above.
+  const supabase = createServiceClient()
+
   const { data: staff, error: staffError } = await supabase
     .from('medical_staff')
     .select('staff_id, staff_type')

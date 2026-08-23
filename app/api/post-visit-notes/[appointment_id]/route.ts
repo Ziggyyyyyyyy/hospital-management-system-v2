@@ -45,18 +45,17 @@ export async function GET(
           reason_for_visit,
           patients:patient_id (
             patient_id,
-            date_of_birth,
-            gender,
-            users (first_name, last_name, email, phone)
+            blood_type,
+            users (first_name, last_name, date_of_birth, gender, phone_number)
           ),
           medical_staff:doctor_id (
             staff_id,
             staff_type,
-            specialty,
-            users (first_name, last_name, email)
+            departments (name),
+            users (first_name, last_name)
           )
         ),
-        post_visit_summaries!post_visit_summaries_appointment_id_fkey (
+        post_visit_summaries (
           summary_id,
           appointment_id,
           visit_explanation,

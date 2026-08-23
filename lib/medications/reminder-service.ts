@@ -343,15 +343,21 @@ export async function sendMedicationReminder(
 
     const { data: patient, error: pErr } = await supabase
       .from('patients')
-      .select('patient_id, user_id, email, first_name, last_name')
+      .select('patient_id, user_id, users(first_name, last_name)')
       .eq('patient_id', r.patient_id)
       .maybeSingle()
 
     if (pErr || !patient) {
       return { success: false, error: pErr?.message ?? 'patient not found' }
     }
-    const p = patient as unknown as PatientRow
-    if (!p.email) {
+    const p = patient as any
+    let email: string | null = null
+    if (p.user_id) {
+      const { data: authUser } = await supabase.auth.admin.getUserById(p.user_id)
+      email = authUser?.user?.email ?? null
+    }
+
+    if (!email) {
       void updateReminderStatus(
         { reminder_id: r.reminder_id, status: 'FAILED', last_error: 'no patient email' },
         supabase,
@@ -359,7 +365,7 @@ export async function sendMedicationReminder(
       return { success: false, error: 'no patient email' }
     }
 
-    const patientName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Patient'
+    const patientName = [p.users?.first_name, p.users?.last_name].filter(Boolean).join(' ') || 'Patient'
     const { subject, body } = buildMedicationReminder({
       reminder_id: r.reminder_id,
       patient_name: patientName,
@@ -371,7 +377,7 @@ export async function sendMedicationReminder(
     fireNotification({
       type: 'MEDICATION_REMINDER',
       channel: 'EMAIL',
-      recipient: p.email,
+      recipient: email,
       subject,
       body,
       user_id: p.user_id ?? undefined,

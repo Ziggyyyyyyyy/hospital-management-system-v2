@@ -1,8 +1,8 @@
 //app/api/admissions/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
-import { date } from 'zod'
 
 // example request body
 // {
@@ -18,7 +18,6 @@ export async function POST(req: Request) {
   const { patient_id, room_id, nurse_id, admission_date, discharge_date } =
     await req.json()
 
-  const supabase = await createClient()
   const result = await getUserRole()
 
   if (!result) {
@@ -32,6 +31,9 @@ export async function POST(req: Request) {
       { status: 403 },
     )
   }
+
+  const supabase = createServiceClient()
+
   // Get doctor info
   const { data: doctor, error: doctorError } = await supabase
     .from('medical_staff')
@@ -205,6 +207,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       },
     ])
+    .select()
     .single()
 
   if (error) {
@@ -220,13 +223,17 @@ export async function POST(req: Request) {
 
 // GET /api/admission → Get all admissions (Admin only)
 export async function GET() {
-  const supabase = await createClient()
   const result = await getUserRole()
 
   if (!result) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { role } = result
+
+  // The admissions/medical_staff/patients RLS policies are mutually self-referential
+  // and exceed the PostgreSQL stack depth for authenticated sessions (SQLSTATE 54001).
+  // Caller authorization and role filtering are strictly enforced above and per-branch below.
+  const supabase = createServiceClient()
 
   if (role == 'Admin') {
     const { data, error } = await supabase

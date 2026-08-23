@@ -48,15 +48,12 @@ async function fetchAppointmentContext(
         reason_for_visit,
         timezone,
         patients!inner (
-          email,
-          first_name,
-          last_name,
-          user_id
+          user_id,
+          users:users ( first_name, last_name, phone_number )
         ),
         medical_staff!appointments_doctor_id_fkey (
-          first_name,
-          last_name,
-          email,
+          user_id,
+          users:users ( first_name, last_name, phone_number ),
           departments ( name )
         ),
         appointment_slots!left ( start_time, end_time )
@@ -70,16 +67,31 @@ async function fetchAppointmentContext(
     const d = row.medical_staff as Record<string, unknown> | undefined
     const slot = row.appointment_slots as Record<string, unknown> | undefined
     if (!p || !d) return null
-    const pEmail = p.email as string | undefined
-    const dEmail = d.email as string | undefined
+    const pUser = (p.users as Record<string, unknown>) ?? {}
+    const dUser = (d.users as Record<string, unknown>) ?? {}
+
+    const pUserId = p.user_id as string
+    const dUserId = d.user_id as string
+    const [pAuth, dAuth] = await Promise.all([
+      supabase.auth.admin.getUserById(pUserId),
+      supabase.auth.admin.getUserById(dUserId),
+    ])
+    const pEmail = pAuth.data.user?.email
+    const dEmail = dAuth.data.user?.email
     if (!pEmail || !dEmail) return null
 
-    const patient_name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Patient'
-    const doctor_name = [d.first_name, d.last_name].filter(Boolean).join(' ') || 'Doctor'
+    const patient_name =
+      [pUser.first_name, pUser.last_name].filter(Boolean).join(' ') ||
+      'Patient'
+    const doctor_name =
+      [dUser.first_name, dUser.last_name].filter(Boolean).join(' ') ||
+      'Doctor'
     const depts = d.departments as Array<{ name: string }> | undefined
     const department = depts?.[0]?.name ?? null
 
-    const startTime = slot?.start_time ? String(slot.start_time) : new Date().toISOString()
+    const startTime = slot?.start_time
+      ? String(slot.start_time)
+      : new Date().toISOString()
     const endTime = slot?.end_time
       ? String(slot.end_time)
       : new Date(Date.now() + 30 * 60 * 1000).toISOString()
@@ -88,7 +100,7 @@ async function fetchAppointmentContext(
       appointment_id: Number(row.appointment_id),
       patient_id: Number(row.patient_id),
       doctor_id: Number(row.doctor_id),
-      user_id: (p.user_id as string) ?? null,
+      user_id: pUserId ?? null,
       patient_email: pEmail,
       doctor_email: dEmail,
       patient_name,
@@ -176,6 +188,7 @@ async function fireTypedNotification(
         break
       }
     }
+    // Dispatch to Patient
     fireNotification({
       type,
       channel: 'EMAIL',
@@ -186,8 +199,22 @@ async function fireTypedNotification(
       patient_id: ctx.patient_id,
       staff_id: ctx.doctor_id,
       appointment_id: ctx.appointment_id,
-      dedupe_key: buildDedupeKey([type, ctx.appointment_id, 'EMAIL']),
+      dedupe_key: buildDedupeKey([type, ctx.appointment_id, 'EMAIL', 'PATIENT']),
     })
+
+    // Also dispatch notice to Doctor
+    if (ctx.doctor_email) {
+      fireNotification({
+        type,
+        channel: 'EMAIL',
+        recipient: ctx.doctor_email,
+        subject: `[Doctor Notice] ${subject}`,
+        body: `<div><p>Dear Dr. ${ctx.doctor_name}, an appointment (#${ctx.appointment_id}) has been updated/confirmed for patient ${ctx.patient_name}.</p>${body}</div>`,
+        staff_id: ctx.doctor_id,
+        appointment_id: ctx.appointment_id,
+        dedupe_key: buildDedupeKey([type, ctx.appointment_id, 'EMAIL', 'DOCTOR']),
+      })
+    }
   } catch {
     // never propagate
   }

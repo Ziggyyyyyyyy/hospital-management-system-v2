@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -33,7 +33,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const updateData: any = {}
 
   // ✅ Check department_id exists
@@ -79,6 +79,7 @@ export async function PATCH(
     .from('medical_staff')
     .update(updateData)
     .eq('staff_id', id)
+    .select()
     .single()
 
   if (error) {

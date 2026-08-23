@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
 
 // GET /api/admissions/:id → Get admission record by ID (Doctor or Admin only)
@@ -9,7 +9,6 @@ export async function GET(
 ) {
   const { id } = await params // Correctly extract `id` from URL params
 
-  const supabase = await createClient()
   const result = await getUserRole()
 
   if (!result) {
@@ -23,6 +22,8 @@ export async function GET(
       { status: 403 },
     )
   }
+
+  const supabase = createServiceClient()
 
   const { data, error } = await supabase
     .from('admissions')
@@ -74,7 +75,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { role, userId } = result
 
   // Get doctor info

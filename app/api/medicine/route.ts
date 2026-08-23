@@ -25,5 +25,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data ?? [])
+  const normalized = (data ?? []).map((item: Record<string, any>) => ({
+    ...item,
+    min_stock_level: item.min_stock_level ?? item.reorder_level ?? 10,
+    dosage: item.dosage ?? item.strength ?? '',
+    supplier: item.supplier ?? item.manufacturer ?? '',
+  }))
+
+  return NextResponse.json(normalized)
 }

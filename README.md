@@ -1,1178 +1,494 @@
-# 🏥 Hospital Management System
+# 🏥 Hospital Management System (HMS)
 
 <p align="center">
-  <strong>A modern, secure, role-based healthcare operations platform</strong>
+  <strong>A Full-Stack, Role-Based Healthcare Operations & Clinical Scheduling Platform</strong>
 </p>
 
 <p align="center">
-  Manage patients, appointments, clinical workflows, pharmacy inventory, billing, analytics and AI-assisted documentation from one centralized system.
+  Streamlining clinical consultations, concurrent slot booking, doctor availability, AI-assisted pre/post-visit documentation, pharmacy dispensing, hospital billing, and asynchronous notifications within a single secure, role-aware system.
 </p>
 
 <p align="center">
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![Next.js](https://img.shields.io/badge/Next.js-15.3.2-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
+![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini-4285F4?logo=google)
+![Resend](https://img.shields.io/badge/Email-Resend_API-black)
 ![Vitest](https://img.shields.io/badge/Testing-Vitest-6E9F18?logo=vitest)
 
 </p>
 
 ---
 
-## 📌 Overview
+## 📌 1. Project Overview & Problem Solved
 
-The **Hospital Management System (HMS)** is a full-stack healthcare operations platform designed to centralize and streamline day-to-day hospital workflows.
+Traditional healthcare facilities often operate across fragmented, siloed software: appointment scheduling is decoupled from doctor leave schedules, clinical documentation lacks structured intake, patient reminders require manual follow-up, and billing/pharmacy records are maintained independently. This leads to double-booking conflicts, high patient no-show rates, administrative overhead, and fragmented patient medical histories.
 
-The system provides dedicated workspaces for:
-
-- 👨‍⚕️ Doctors
-- 👩‍⚕️ Nurses
-- 🧑‍🤝‍🧑 Patients
-- 💊 Pharmacists
-- 🛡️ Administrators
-
-Instead of treating appointments, patient information, pharmacy, billing, clinical documentation and hospital analytics as isolated modules, HMS connects them through a common role-aware platform.
-
-The application combines traditional hospital management workflows with modern capabilities such as:
-
-- End-to-end appointment booking
-- Temporary appointment-slot holding
-- Availability and leave management
-- AI-assisted pre-visit symptom intake
-- AI-generated clinical summaries
-- Post-visit documentation
-- Pharmacy inventory management
-- Billing and invoice management
-- Hospital analytics
-- Notifications and reminders
-- Calendar integration
-- Role-based access control
-- Responsive light/dark UI
+The **Hospital Management System (HMS)** solves these challenges by providing a unified, real-time, role-aware platform that connects:
+- **Patients** to verified specialists with real-time atomic slot reservation.
+- **Doctors** with automated schedule conflict detection, structured consultation tools, and AI-assisted documentation.
+- **Nurses** with inpatient room assignments and patient care monitoring.
+- **Pharmacists** with real-time inventory tracking, low-stock alerts, and prescription dispensing.
+- **Administrators** with hospital-wide operational analytics, staff provisioning, room allocation, and unified billing.
 
 ---
 
-# ✨ Key Features
+## ✨ 2. Key Features
 
-| Feature | Description |
-|---|---|
-| 🔐 Authentication | Supabase-based authentication and protected sessions |
-| 👥 RBAC | Role-aware access for Admin, Doctor, Nurse, Patient and Pharmacist |
-| 📅 Appointments | Specialty → Doctor → Date → Slot → Hold → Confirm workflow |
-| ⏱️ Slot Holding | Server-enforced temporary slot reservation with countdown |
-| 👨‍⚕️ Doctor Management | Availability, leave, conflicts and appointment workflows |
-| 🧑‍🤝‍🧑 Patient Management | Patient profiles, appointments and billing |
-| 💊 Pharmacy | Inventory, low-stock/out-of-stock tracking and dispensing |
-| 💳 Billing | Invoices, billing items and payment status |
-| 🤖 AI Pre-Visit | Structured symptom intake and AI-generated visit preparation |
-| 📝 Clinical Notes | Post-visit documentation workflows |
-| 📊 Analytics | Revenue, visits, demographics and medicine/billing analytics |
-| 🔔 Notifications | Notification and retry infrastructure |
-| 📆 Calendar | Calendar authorization and synchronization support |
-| 🌙 Theming | Responsive clinical UI with light/dark themes |
-| 🧪 Testing | Vitest-based feature and state tests |
+- **🛡️ Multi-Tenant Role-Based Access Control (RBAC):** Distinct dashboards, route guards, and permission scopes for `Admin`, `Doctor`, `Nurse`, `Patient`, and `Pharmacist`.
+- **⏱️ Concurrency-Safe Slot Reservation:** Atomic 5-minute temporary slot holding powered by PostgreSQL advisory locks and transaction-level row locks (`FOR UPDATE`) to prevent race conditions and double-booking.
+- **📅 Dynamic Availability & Doctor Leave Management:** Automated doctor slot generation based on shift windows, break times, and slot duration, coupled with automated conflict detection and rescheduling triggers when leave is approved.
+- **🤖 Dual-Stage AI Clinical Intelligence:** Pre-visit symptom intake analysis (chief complaint, urgency rating, clinical summary, and suggested patient questions) and post-visit clinical summary generation powered by Google Gemini with graceful fallback handling.
+- **📬 Multi-Channel Notification Engine:** Asynchronous outbox pattern delivering booking confirmations, cancellations, reschedules, and doctor leave alerts via Resend API / SMTP with automated exponential-backoff retries.
+- **📆 Google Calendar Bi-Directional Synchronization:** OAuth 2.0 calendar integration featuring client-side AES-256-GCM token encryption (`crypto/vault`) and automated event creation, updating, and cancellation.
+- **💊 Pharmacy & Real-Time Stock Management:** Categorized inventory management (`In Stock`, `Low Stock`, `Out of Stock`) with automated transaction logging upon dispensing or restocking.
+- **💳 Unified Billing & Invoicing:** Dynamic invoice generation with multi-item categorization (`Medicine`, `Room`, `Consultation`, `Lab`), payment status tracking, and automated calculation.
+- **📊 Real-Time Hospital Analytics:** Departmental revenue distribution, patient demographics (gender, blood type), visit frequency trends, and pharmaceutical consumption analytics rendered via Recharts.
 
 ---
 
-# 👥 Role-Based Workspaces
+## 🏗️ 3. Architecture & High-Level Workflow
 
-## 👨‍⚕️ Doctor Workspace
-
-The Doctor dashboard provides a focused clinical workspace for managing daily patient interactions.
-
-### Capabilities
-
-- View appointments
-- View patient information
-- Manage admissions
-- View available rooms
-- View medicine stock
-- Create post-visit notes
-- Manage prescriptions
-- Manage availability
-- Manage doctor leave
-- Detect scheduling conflicts
-- Access AI-assisted documentation
-
-### Doctor Workflow
+The application is structured as a modern full-stack App Router application with strict separation between presentation, API boundary, domain services, and database persistence.
 
 ```text
-Appointments
-      ↓
-Patient Information
-      ↓
-Consultation
-      ↓
-Prescription / Clinical Notes
-      ↓
-Post-Visit Documentation
+┌───────────────────────────────────────────────────────────────────────────┐
+│                           Client Presentation Layer                       │
+│     (Next.js 15 App Router · React 19 · Tailwind CSS v4 · Radix UI)       │
+├─────────────┬─────────────┬──────────────┬─────────────┬──────────────────┤
+│    Admin    │   Doctor    │    Nurse     │   Patient   │    Pharmacist    │
+│  Workspace  │  Workspace  │  Workspace   │  Workspace  │    Workspace     │
+└──────┬──────┴──────┬──────┴──────┬───────┴──────┬──────┴────────┬─────────┘
+       │             │             │              │               │
+       └─────────────┴─────────────┼──────────────┴───────────────┘
+                                   ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                     Next.js Route Handlers / API Layer                    │
+│      (Identity Resolution · Role Enforcement · Zod Payload Validation)    │
+└──────────────────────────────────┬────────────────────────────────────────┘
+                                   ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                          Core Domain Services                             │
+│  ┌───────────────────────┬────────────────────────┬────────────────────┐  │
+│  │ Booking & Hold Engine │ Leave & Availability   │ AI Intake Service  │  │
+│  ├───────────────────────┼────────────────────────┼────────────────────┤  │
+│  │ Outbox Event Engine   │ Notification Service   │ Calendar Service   │  │
+│  ├───────────────────────┼────────────────────────┼────────────────────┤  │
+│  │ Billing & Pharmacy    │ AES-256 Crypto Vault   │ Reminder Service   │  │
+│  └───────────────────────┴────────────────────────┴────────────────────┘  │
+└──────────────────────────────────┬────────────────────────────────────────┘
+                                   ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                   Supabase Managed PostgreSQL Database                    │
+│   (Row Level Security · Advisory Locks · Atomic RPC Functions · Triggers) │
+└───────────────────────────────────────────────────────────────────────────┘
+```
+
+### High-Level End-to-End Patient Workflow
+```text
+Select Department / Specialty
+       │
+       ▼
+Select Doctor & Inspect Profile
+       │
+       ▼
+Choose Date & Time Slot
+       │
+       ▼
+Acquire 5-Minute Atomic Slot Hold (Advisory Lock)
+       │
+       ▼
+Confirm Appointment Booking (Idempotency Key)
+       │
+       ├──────────────────────────────────────────┐
+       ▼                                          ▼
+Trigger Email Outbox (Resend API)       Trigger Google Calendar Sync
+       │
+       ▼
+Submit Pre-Visit AI Symptom Intake
+       │
+       ▼
+AI Processes Urgency, Summary & Suggested Questions
+       │
+       ▼
+Doctor Conducts Consultation & Records Notes / Prescriptions
+       │
+       ▼
+Pharmacist Dispenses Prescribed Medicines & Admin Finalizes Invoice
 ```
 
 ---
 
-# 👩‍⚕️ Nurse Workspace
+## 🛠️ 4. Technology Stack
 
-The Nurse dashboard focuses on patient assignment and daily care operations.
+### Frontend & UI
+- **Framework:** Next.js 15.3.2 (React 19, App Router)
+- **Styling:** Tailwind CSS v4 with semantic CSS variables
+- **Component Primitives:** Radix UI (Dialog, Select, Tabs, Dropdown, Accordion, Tooltip)
+- **Icons:** Lucide React
+- **Data Visualization:** Recharts
+- **Toast Notifications:** Sonner
+- **Theming:** `next-themes` (Full Light/Dark mode support)
 
-### Capabilities
+### Backend & API
+- **Runtime:** Node.js 18+ (Next.js Server Runtime & Server Actions)
+- **Validation:** Zod v3 schemas for strict request payload validation
+- **Security & Crypto:** Web Crypto API / Node `crypto` for AES-256-GCM token encryption
 
-- View assigned patients
-- View room assignments
-- Track nurse assignments
-- Access relevant patient information
-- Monitor daily workload
+### Database & Auth
+- **Platform:** Supabase (PostgreSQL 15+)
+- **Authentication:** Supabase Auth (JWT session handling and cookie management via `@supabase/ssr`)
+- **Authorization:** PostgreSQL Row Level Security (RLS) policies and stored PL/pgSQL procedures
 
-### Workflow
+### External Integrations
+- **AI / LLM:** Google Gemini API (`@google/genai` model `gemini-3.6-flash`)
+- **Email Delivery:** Resend API / SMTP provider fallback
+- **Calendar Integration:** Google Calendar REST API (OAuth 2.0)
+
+### Testing & Quality
+- **Test Framework:** Vitest v4 with isolated test harnesses
+- **Type Checking:** TypeScript 5.0 (Strict mode enabled)
+- **Linting:** ESLint 9
+
+---
+
+## 👥 5. Main Modules & Role-Based Workspaces
+
+### 🧑‍🤝‍🧑 Patient Workspace (`/patient`)
+- **Specialty & Doctor Discovery:** Search and filter active doctors by department and specialization.
+- **Interactive Booking:** Live calendar slot picker with real-time 5-minute countdown timers for held slots.
+- **AI Pre-Visit Intake:** Guided symptom questionnaire recording severity, duration, worsening factors, and consent.
+- **Personal Records & Invoices:** Real-time visibility into past and upcoming appointments, prescriptions, and billing statements.
+
+### 👨‍⚕️ Doctor Workspace (`/doctor`)
+- **Clinical Schedule:** Daily and weekly view of confirmed and completed appointments.
+- **Consultation & Notes:** Creation of structured post-visit clinical notes, diagnoses, and medication prescriptions.
+- **Availability Management:** Configuration of recurring weekly schedules (working days, start/end hours, break times, and slot duration).
+- **Leave Application:** Requesting leave with automatic conflict inspection for existing patient bookings.
+
+### 👩‍⚕️ Nurse Workspace (`/nurse`)
+- **Inpatient Care Management:** Overview of active admissions, assigned rooms, and patient vitals.
+- **Patient Monitoring:** Rapid lookup of patient emergency contacts and blood groups.
+
+### 💊 Pharmacy Workspace (`/pharmacy`)
+- **Inventory Control:** Live stock monitoring with visual classification (`In Stock`, `Low Stock < 20`, `Out of Stock = 0`).
+- **Dispensing Workflows:** One-click medicine dispensing linked directly to inventory deductions.
+- **Stock Replenishment:** Restocking medicines with automated unit cost and stock level updates.
+
+### 🛡️ Administrator Workspace (`/admin`)
+- **Staff Provisioning:** Creation, editing, and activation of Doctor, Nurse, Pharmacist, and Admin staff accounts.
+- **Room & Nurse Allocation:** Managing hospital rooms and assigning duty nurses to admitted patients.
+- **Billing Management:** Invoice generation, line-item pricing (`Medicine`, `Room`, `Consultation`), and payment tracking.
+- **Executive Analytics:** Departmental breakdown of revenue, visits, patient demographics, and medicine utilization.
+
+---
+
+## 🔒 6. Authentication and Role-Based Access Control (RBAC)
+
+The system implements multi-layered authentication and authorization:
 
 ```text
-Nurse
- ↓
-Assigned Patients
- ↓
-Room / Assignment Information
- ↓
-Patient Care Workflow
+Incoming Request
+       │
+       ▼
+1. Supabase Session Validation (JWT verification via cookies)
+       │
+       ▼
+2. Identity Resolution (`resolveIdentity` fetches User ID, Email, Staff ID, Patient ID)
+       │
+       ▼
+3. Role Verification (`requireRoles` restricts route to permitted roles: Admin, Doctor, etc.)
+       │
+       ▼
+4. Resource Ownership Verification (e.g., verifying `appointment.patient_id === caller.patientId`)
+       │
+       ▼
+5. Service Execution (PostgreSQL transaction / RLS query)
 ```
 
----
-
-# 🧑‍🤝‍🧑 Patient Workspace
-
-Patients get a personalized dashboard for managing their healthcare journey.
-
-### Capabilities
-
-- View personal profile
-- View upcoming appointments
-- Book appointments
-- Select medical specialty
-- Select doctor
-- Browse available slots
-- Temporarily hold appointment slots
-- Confirm appointments
-- View billing information
-- Submit pre-visit symptoms
-- View AI-generated pre-visit summary
-- View suggested questions for the doctor
+- **Role Resolution:** Handled centrally in [`utils/get-role.ts`](file:///c:/Users/hp/hospital-management-system/utils/get-role.ts) and [`lib/appointments/api-helpers.ts`](file:///c:/Users/hp/hospital-management-system/lib/appointments/api-helpers.ts).
+- **Service Client Isolation:** To prevent recursive RLS evaluation issues while preserving security, administrative and cross-table operations use `createServiceClient()` **strictly after** identity and role requirements have passed at the API boundary.
 
 ---
 
-# 💊 Pharmacy Workspace
+## ⏱️ 7. Appointment Slot Hold + Double-Booking Protection
 
-The Pharmacy dashboard provides inventory-focused operations.
-
-### Capabilities
-
-- View medicine inventory
-- Monitor stock levels
-- Identify low-stock medicines
-- Identify out-of-stock medicines
-- Dispense medicines
-- Restock medicines
-- View inventory statistics
-
-### Inventory Workflow
+To prevent concurrent users from booking the same doctor slot simultaneously, HMS employs a robust two-phase commit reservation strategy:
 
 ```text
-Medicine Inventory
-       ↓
-Stock Classification
-       ↓
-In Stock / Low Stock / Out of Stock
-       ↓
-Dispense / Restock
+Phase 1: Temporary Hold
+-----------------------
+Patient selects Slot
+       │
+       ▼
+Call `atomic_hold_slot()` RPC
+       │
+       ├─ Acquire 64-bit PostgreSQL advisory transaction lock on Slot ID
+       ├─ Expire any stale holds on the slot (`expires_at < NOW()`)
+       ├─ Lock slot row (`FOR UPDATE`) and verify status is 'AVAILABLE'
+       ├─ Verify doctor is not on approved/pending leave
+       ├─ Mark slot status as 'HELD'
+       └─ Insert record into `slot_holds` with a 5-minute UUID `hold_token`
+
+Phase 2: Booking Confirmation
+-----------------------------
+Patient clicks Confirm Booking
+       │
+       ▼
+Call `atomic_confirm_booking()` RPC
+       │
+       ├─ Verify `hold_token` exists, is 'ACTIVE', and `expires_at > NOW()`
+       ├─ Check idempotency key to prevent duplicate booking on double-click
+       ├─ Transition slot status: 'HELD' → 'BOOKED'
+       ├─ Transition hold status: 'ACTIVE' → 'CONSUMED'
+       ├─ Insert appointment row with status 'CONFIRMED'
+       └─ Enqueue asynchronous outbox notifications
 ```
 
 ---
 
-# 🛡️ Administrator Workspace
+## 📅 8. Doctor Leave & Conflict Handling
 
-The Admin workspace provides centralized hospital operations management.
-
-### Management
-
-- Staff management
-- Patient management
-- Nurse assignment
-- Billing management
-- Billing item management
-- Appointment management
-
-### Analytics
-
-- Revenue by department
-- Visits by department
-- Gender distribution
-- Blood-type distribution
-- Billing item analytics
-- Medicine quantity analytics
-- Operational statistics
+When a doctor applies for leave:
+1. **Overlap Detection:** The system evaluates all future slots between `start_date` and `end_date`.
+2. **Conflict Resolution (`process_doctor_leave_conflicts`):**
+   - All `AVAILABLE` slots within the leave window are transitioned to `BLOCKED`.
+   - All active holds are released.
+   - Any already `CONFIRMED` appointments are updated to `DOCTOR_LEAVE_CONFLICT` or `RESCHEDULE_REQUIRED`.
+3. **Automated Patient Alerts:** Outbox events are dispatched to notify affected patients with a link to reschedule.
 
 ---
 
-# 📅 Appointment Booking System
+## 🤖 9. AI/LLM Features & Fallback Resilience
 
-One of the core workflows of HMS is the complete appointment booking pipeline.
+The AI module uses Google Gemini (`gemini-3.6-flash`) via [`lib/ai/gemini.ts`](file:///c:/Users/hp/hospital-management-system/lib/ai/gemini.ts) with strict structured JSON output parsing and validation via Zod schemas.
 
-## End-to-End Flow
+### Pre-Visit Symptom Intelligence
+- Analyzes patient symptoms, duration, and severity.
+- Produces:
+  - **Chief Complaint** (clinical summary)
+  - **Urgency Rating** (`EMERGENT` | `URGENT` | `ROUTINE` | `SELF_CARE`)
+  - **Suggested Questions** (3 personalized questions for the patient to ask their doctor)
+- **Medical Disclaimer:** Explicitly attached to all AI-generated outputs.
 
-```text
-┌──────────────────┐
-│ Select Specialty │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│  Select Doctor   │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│ Select Date      │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│ Available Slots  │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│ Hold Appointment │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│ Hold Countdown   │
-│    5 Minutes     │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│ Confirm Booking  │
-└──────────────────┘
-```
-
-## Appointment Features
-
-- Specialty selection
-- Doctor filtering
-- Doctor availability
-- Slot generation
-- Temporary slot holds
-- Server-enforced hold expiration
-- Booking confirmation
-- Idempotency protection
-- Appointment cancellation
-- Appointment rescheduling
-- Doctor leave management
-- Conflict detection
-- Appointment state management
+### Fallback & Error Handling
+- If the Gemini API key is missing, network requests timeout, or the model produces malformed JSON:
+  - The status is recorded as `FAILED` in `ai_previsit_summaries`.
+  - The patient dashboard displays a non-blocking error notice with a **Retry** button.
+  - Core appointment booking and clinical consultation workflows continue without interruption.
 
 ---
 
-# 🤖 AI-Powered Pre-Visit Intelligence
+## 📬 10. Email & Notification System
 
-HMS includes an AI-assisted patient intake workflow designed to help structure information before a clinical consultation.
+HMS features an extensible notification system supporting multiple providers:
+- **Resend API Provider:** Production HTTP delivery using official Resend SDK.
+- **Stub Provider:** In-memory / database-only logger for isolated local development and automated testing.
 
-## Workflow
-
-```text
-Patient
-   ↓
-Select Existing Appointment
-   ↓
-Enter Symptoms
-   ↓
-Severity
-   ↓
-Duration
-   ↓
-Worsening / Context
-   ↓
-AI Consent
-   ↓
-AI Processing
-   ↓
-Pre-Visit Summary
-   ↓
-Suggested Questions
-```
-
-The patient can provide structured information including:
-
-- Symptoms
-- Severity
-- Duration
-- Whether symptoms are worsening
-- Additional context
-- Consent for AI processing
-
-The AI summary can provide:
-
-- Chief complaint
-- Urgency information
-- Structured summary
-- Suggested questions for the doctor
-
-### AI Lifecycle
-
-```text
-PENDING
-   ↓
-PROCESSING
-   ↓
-COMPLETED
-   ↓
-AI Summary Available
-```
-
-Failure states are also represented and can be refreshed from the patient dashboard.
-
-> **Medical Safety:** AI-generated content is intended only as decision-support and must not be treated as a diagnosis or replacement for professional medical judgment.
+### Supported Notification Triggers
+1. **Booking Confirmation:** Sent to both patient and doctor with appointment details.
+2. **Appointment Cancellation:** Sent when an appointment is cancelled by patient, doctor, or admin.
+3. **Appointment Reschedule:** Sent when an appointment time is updated.
+4. **Doctor Leave Conflict:** Sent to patients whose appointments coincide with approved leave.
+5. **AI Summary Ready:** Sent when pre-visit or post-visit AI notes are generated.
 
 ---
 
-# 📝 Post-Visit Clinical Documentation
+## 📆 11. Google Calendar Integration & OAuth Vault
 
-The system also supports post-visit documentation workflows.
-
-Doctors can record relevant information following an appointment, while the application provides supporting AI infrastructure for post-visit documentation.
-
-```text
-Appointment
-     ↓
-Clinical Consultation
-     ↓
-Post-Visit Notes
-     ↓
-AI-Assisted Documentation
-     ↓
-Patient Record
-```
+- **OAuth 2.0 Flow:** Doctors can connect their Google Calendar via `/api/calendar/authorize` and `/api/calendar/callback`.
+- **AES-256-GCM Vault:** OAuth refresh and access tokens are encrypted at rest using AES-256-GCM (`lib/crypto/vault.ts`) before being stored in `google_calendar_tokens`.
+- **Event Lifecycle:**
+  - `fireCalendarCreate`: Generates calendar event with patient details upon booking confirmation.
+  - `fireCalendarUpdate`: Updates start/end times upon rescheduling.
+  - `fireCalendarDelete`: Deletes the calendar event upon cancellation.
 
 ---
 
-# 💳 Billing & Invoicing
+## ⚙️ 12. Background Jobs & Retries
 
-The billing module provides centralized invoice and billing-item management.
-
-### Features
-
-- Create billing records
-- Update billing records
-- Add billing items
-- Track invoice status
-- View invoice amounts
-- Patient billing summary
-- Expandable invoice details
-- Admin billing table
-- Semantic payment status indicators
-
-Supported visual states include:
-
-```text
-PAID
-PENDING
-NEUTRAL / OTHER
-```
+- **Notification Retry Worker (`POST /api/notifications/retry`):** Queries failed notification records and re-attempts delivery with exponential backoff up to `max_retries` (default: 3).
+- **Hold Expiry Engine (`expireStaleHolds`):** Periodically cleans expired temporary slot holds and restores abandoned slots to `AVAILABLE`.
+- **Medication Reminders (`POST /api/medications/process-reminders`):** Checks prescription frequencies and schedules automated patient reminders.
 
 ---
 
-# 💊 Pharmacy & Medicine Management
+## 🗄️ 13. Database Overview & Schema Migrations
 
-The pharmacy module manages medicine availability and dispensing workflows.
+All database schemas and procedures are versioned under `supabase/migrations/`:
 
-### Stock Categories
-
-```text
-┌───────────────┐
-│ In Stock      │
-├───────────────┤
-│ Low Stock     │
-├───────────────┤
-│ Out of Stock  │
-├───────────────┤
-│ All Medicines │
-└───────────────┘
-```
-
-The dashboard provides KPI cards and category counts for quick inventory visibility.
+| Migration File | Description |
+| :--- | :--- |
+| `20260820170000_base_schema.sql` | Users, Patients, Staff, Departments, Rooms, Admissions, Medicines, Billing |
+| `20260820180000_appointment_domain.sql` | Slots, Appointments, Slot Holds, Doctor Availability, Doctor Leave |
+| `20260820181000_appointment_rpc.sql` | Atomic PL/pgSQL procedures (`atomic_hold_slot`, `atomic_confirm_booking`, etc.) |
+| `20260821060400_ai_visit_intelligence.sql` | Pre-visit and post-visit AI intake schemas |
+| `20260821070000_post_visit_reminders.sql` | Medication schedules and reminder tracking |
+| `20260821080000_notifications_calendar.sql` | Notification records, OAuth tokens, Google Calendar mappings |
+| `20260821090000_notifications_dedupe_meds.sql` | Notification deduplication indices and medication lookahead |
+| `20260824000000_security_foundation.sql` | Row Level Security (RLS) policies and security triggers |
 
 ---
 
-# 📊 Hospital Analytics
-
-Administrators can access operational analytics through a dedicated dashboard.
-
-### Analytics Available
-
-- Revenue trends
-- Department visit trends
-- Gender distribution
-- Blood-type distribution
-- Billing item distribution
-- Medicine quantity information
-- Overall operational statistics
-
-Analytics are rendered through responsive chart components.
-
----
-
-# 🔔 Notifications
-
-The application includes a notification infrastructure for hospital workflows.
-
-Supported functionality includes:
-
-- Notification retrieval
-- Notification retry handling
-- Notification service layer
-- Reminder-related workflows
-- Appointment-related notifications
-
----
-
-# 📆 Calendar Integration
-
-HMS includes calendar integration infrastructure for appointment-related workflows.
-
-The calendar module supports:
-
-- Authorization
-- OAuth callback handling
-- Appointment synchronization
-
----
-
-# 🔐 Security Architecture
-
-Security is treated as a first-class concern throughout the application.
-
-## Authentication
-
-Supabase Authentication provides the identity layer.
-
-```text
-User
- ↓
-Supabase Authentication
- ↓
-Authenticated Session
- ↓
-Role Resolution
- ↓
-Role-Specific Workspace
-```
-
-## Role-Based Authorization
-
-The system supports:
-
-```text
-Admin
-Doctor
-Nurse
-Patient
-Pharmacist
-```
-
-Protected API routes validate authentication and apply role/ownership checks before performing sensitive operations.
-
-## Sensitive Server Operations
-
-Where recursive database policies can interfere with controlled server-side reads, the application uses a service client **only after application-level identity and authorization checks**.
-
-This keeps service-level database access behind the existing authorization boundary instead of exposing protected endpoints publicly.
-
----
-
-# 🏗️ System Architecture
-
-```text
-                         ┌──────────────────────┐
-                         │       Client         │
-                         │ React / Next.js UI   │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │    Role-Based Shell  │
-                         │ Admin / Doctor /     │
-                         │ Nurse / Patient /    │
-                         │ Pharmacist           │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │      Next.js API Routes       │
-                    │                               │
-                    │ Appointments                  │
-                    │ Patients                      │
-                    │ Staff                         │
-                    │ Billing                       │
-                    │ Pharmacy                      │
-                    │ AI                            │
-                    │ Notifications                 │
-                    │ Calendar                      │
-                    │ Analytics                     │
-                    └───────────────┬───────────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │       Domain Services         │
-                    │                               │
-                    │ Booking Service                │
-                    │ Availability Service           │
-                    │ Slot Generator                 │
-                    │ Hold Service                   │
-                    │ Leave Service                  │
-                    │ AI Services                    │
-                    │ Notification Service           │
-                    │ Medication Services            │
-                    │ Calendar Service               │
-                    └───────────────┬───────────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │           Supabase            │
-                    │                               │
-                    │ Authentication                │
-                    │ PostgreSQL                    │
-                    │ Row Level Security             │
-                    │ Database Functions             │
-                    └───────────────────────────────┘
-```
-
----
-
-# 🧩 Application Architecture
-
-The codebase is organized into clear feature and domain boundaries.
-
-```text
-hospital-management-system/
-│
-├── app/
-│   ├── admin/
-│   ├── doctor/
-│   ├── nurse/
-│   ├── patient/
-│   ├── pharmacy/
-│   │
-│   └── api/
-│       ├── admin/
-│       ├── ai/
-│       ├── appointments/
-│       ├── billing/
-│       ├── calendar/
-│       ├── dashboard/
-│       ├── doctor-leave/
-│       ├── doctors/
-│       ├── notifications/
-│       ├── patients/
-│       ├── post-visit-notes/
-│       ├── prescriptions/
-│       ├── specialties/
-│       └── symptoms/
-│
-├── components/
-│   ├── admin/
-│   ├── appointments/
-│   ├── doctor/
-│   ├── leave/
-│   ├── patient/
-│   ├── shell/
-│   ├── symptoms/
-│   └── ui/
-│
-├── lib/
-│   ├── ai/
-│   ├── appointments/
-│   ├── calendar/
-│   ├── medications/
-│   ├── notifications/
-│   └── validation/
-│
-├── supabase/
-│   └── migrations/
-│
-├── tests/
-│
-├── utils/
-│   └── supabase/
-│
-├── package.json
-└── README.md
-```
-
----
-
-# 🛠️ Technology Stack
-
-## Frontend
-
-- **Next.js**
-- **React**
-- **TypeScript**
-- **Tailwind CSS v4**
-- **shadcn/ui**
-- **Radix UI**
-- **Lucide React**
-- **Recharts**
-- **Sonner**
-- **next-themes**
-
-## Backend
-
-- **Next.js App Router**
-- **Next.js API Routes**
-- **TypeScript**
-- **Supabase**
-- **PostgreSQL**
-
-## Authentication & Security
-
-- **Supabase Auth**
-- **Role-Based Access Control**
-- **PostgreSQL Row Level Security**
-- **Server-side Supabase service client**
-
-## AI
-
-- **Google Gemini API**
-
-## Testing & Quality
-
-- **Vitest**
-- **TypeScript**
-- **ESLint**
-
----
-
-# 🎨 Design System
-
-The UI was designed around a clinical, calm and information-dense visual language.
-
-### Design Principles
-
-- Semantic color tokens
-- Consistent typography
-- Accessible controls
-- Responsive layouts
-- Clear hierarchy
-- Meaningful status indicators
-- Skeleton loading states
-- Empty states
-- Error states
-- Consistent cards and tables
-- Light and dark themes
-
-### UI System
-
-The application uses reusable components built with:
-
-- shadcn/ui
-- Radix primitives
-- Tailwind CSS
-- Lucide icons
-
-The role-based application shell provides:
-
-- Responsive sidebar
-- Mobile navigation sheet
-- Active route highlighting
-- Breadcrumbs
-- User profile menu
-- Role-aware navigation
-- Collapsible desktop navigation
-
----
-
-# 📱 Responsive Experience
-
-The interface is designed to work across:
-
-- Desktop
-- Laptop
-- Tablet
-- Mobile
-
-Mobile navigation uses a responsive sheet-based navigation pattern while desktop users get a collapsible sidebar.
-
----
-
-# 🧪 Testing & Code Quality
-
-The project contains automated tests for important application domains.
-
-### Test Areas
-
-- Appointment booking
-- Appointment state transitions
-- AI features
-- Notifications
-- Calendar workflows
-
-### TypeScript
-
-```bash
-npx tsc --noEmit
-```
-
-### ESLint
-
-```bash
-npm run lint
-```
-
-### Tests
-
-```bash
-npm test
-```
-
----
-
-# 🚀 Getting Started
-
-## Prerequisites
-
-Install:
-
-- Node.js 18+
-- npm
-- Git
-- Supabase project
-- Gemini API access for AI features
-
----
-
-## 1. Clone the Repository
-
+## 🚀 14. Local Setup & Development Instructions
+
+### Prerequisites
+- Node.js 18.x or 20.x
+- npm or pnpm
+- A Supabase project (Free tier or local Docker instance)
+- Google Gemini API Key (optional, for AI features)
+- Resend API Key (optional, for live email delivery)
+
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Ziggyyyyyyyy/hospital-management-system.git
-```
-
-```bash
 cd hospital-management-system
 ```
 
----
-
-## 2. Install Dependencies
-
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
----
-
-## 3. Environment Variables
-
-Create:
-
-```text
-.env.local
+### 3. Configure Environment Variables
+Copy `.env.example` to `.env.local` and populate your credentials:
+```bash
+cp .env.example .env.local
 ```
 
-Configure the required Supabase and AI environment variables based on the project's `.env.example`.
-
-Example:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GEMINI_API_KEY=your_gemini_api_key
+### 4. Apply Database Migrations
+Apply all SQL migrations in `supabase/migrations/` sequentially through the Supabase SQL Editor or Supabase CLI:
+```bash
+npx supabase db push
 ```
 
-### ⚠️ Important
-
-Never commit:
-
-```text
-.env.local
+### 5. Seed Demo Data
+Populate standard test accounts, departments, doctors, rooms, and pharmacy inventory:
+```bash
+npm run seed:demo
 ```
 
-Never expose:
-
-```text
-SUPABASE_SERVICE_ROLE_KEY
-GEMINI_API_KEY
-```
-
-in client-side code or public repositories.
-
----
-
-# 🗄️ Database Setup
-
-The project contains Supabase migrations under:
-
-```text
-supabase/migrations/
-```
-
-The migration set covers areas including:
-
-- Base hospital schema
-- Appointment domain
-- Appointment RPCs
-- AI visit intelligence
-- Post-visit reminders
-- Notifications
-- Calendar integration
-- Medication-related functionality
-
-Apply the migrations to the configured Supabase project before using the complete application.
-
----
-
-# ▶️ Run Locally
-
-Start the development server:
-
+### 6. Run the Development Server
 ```bash
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Then open:
+---
 
-```text
-http://localhost:3000
+## 🔑 15. Environment Variables Reference
+
+| Variable Name | Required | Scope | Description |
+| :--- | :---: | :---: | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | Client/Server | URL of your Supabase instance |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Client/Server | Public anonymous key for Supabase Auth |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Server-only | Secret service role key for admin operations |
+| `GEMINI_API_KEY` | Optional | Server-only | Google Gemini API key for AI symptom features |
+| `EMAIL_PROVIDER` | Optional | Server-only | `resend`, `sendgrid`, or `stub` (default: `stub`) |
+| `RESEND_API_KEY` | Optional | Server-only | Resend API key (`re_...`) for email delivery |
+| `EMAIL_FROM` | Optional | Server-only | Sender email address (e.g. `onboarding@resend.dev`) |
+| `GOOGLE_CLIENT_ID` | Optional | Server-only | Google OAuth 2.0 Client ID for Calendar sync |
+| `GOOGLE_CLIENT_SECRET` | Optional | Server-only | Google OAuth 2.0 Client Secret |
+| `GOOGLE_REDIRECT_URI` | Optional | Server-only | OAuth redirect callback URL |
+| `ENCRYPTION_SALT` | Optional | Server-only | Salt/key for AES-256 OAuth token encryption |
+| `APPOINTMENT_HOLD_DURATION_SECONDS` | Optional | Server-only | Slot hold expiry duration (default: `300`) |
+
+---
+
+## 👥 16. Demo Accounts Section
+
+When seeded with `npm run seed:demo`, the following pre-configured demo accounts are available:
+
+| Role | Email | Password | Primary Workspace |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `demo-admin@hms.local` | `DemoAdmin123!` | `/admin` |
+| **Doctor** | `demo-doctor@hms.local` | `DemoDoctor123!` | `/doctor` |
+| **Nurse** | `demo-nurse@hms.local` | `DemoNurse123!` | `/nurse` |
+| **Pharmacist** | `demo-pharmacist@hms.local` | `DemoPharm123!` | `/pharmacy` |
+| **Patient** | `demo-patient@hms.local` | `DemoPatient123!` | `/patient` |
+
+---
+
+## 🔌 17. API Documentation Overview
+
+### Core Healthcare Endpoints
+
+| Method | Endpoint | Description | Permitted Roles |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/specialties` | List medical specialties & doctor counts | Public / Authenticated |
+| `GET` | `/api/doctors` | List active doctors filtered by department | Public / Authenticated |
+| `GET` | `/api/doctors/[id]/slots` | Get available bookable slots for doctor | Public / Authenticated |
+| `POST` | `/api/appointments/hold` | Temporarily hold a slot (5 minutes) | `Patient`, `Admin` |
+| `POST` | `/api/appointments/confirm` | Confirm an active slot hold | `Patient`, `Admin` |
+| `POST` | `/api/appointments/[id]/cancel` | Cancel a scheduled appointment | `Patient`, `Doctor`, `Admin` |
+| `POST` | `/api/appointments/[id]/reschedule` | Reschedule to a newly held slot | `Patient`, `Admin` |
+| `POST` | `/api/symptoms` | Submit pre-visit symptoms for AI intake | `Patient` |
+| `GET` | `/api/ai/previsit` | Retrieve AI pre-visit intake summary | `Patient`, `Doctor` |
+| `POST` | `/api/post-visit-notes` | Record doctor consultation notes | `Doctor` |
+| `POST` | `/api/prescriptions` | Issue new patient prescription | `Doctor` |
+| `POST` | `/api/doctor-leave` | Submit and process doctor leave | `Doctor`, `Admin` |
+| `GET` | `/api/dashboard/stats` | Retrieve hospital-wide metrics | `Admin` |
+| `POST` | `/api/notifications/retry` | Trigger retry of failed notifications | `Admin` / Cron |
+
+---
+
+## 🧪 18. Testing Commands & Quality Assurance
+
+The codebase includes an extensive Vitest automated test suite covering all critical business domains:
+
+```bash
+# Run all automated tests
+npm test
+
+# Run tests in watch mode
+npx vitest
+
+# Run TypeScript type check
+npx tsc --noEmit
+
+# Run ESLint validation
+npm run lint
 ```
 
-The exact port may differ depending on the local development configuration.
+### Verified Test Suites
+- `tests/appointment-flow.test.ts`: Slot generation, atomic holding, concurrent hold contention, idempotency, and cancellation.
+- `tests/ai-features.test.ts`: Pre-visit intake processing, Zod schema validation, and API failure fallbacks.
+- `tests/notifications-calendar.test.ts`: Email delivery, deduplication keys, and AES-256 token encryption.
+- `tests/doctor-leave.test.ts`: Overlapping leave detection and appointment conflict resolution.
+- `tests/analytics.test.ts`: Departmental revenue, demographics, and visit trend computations.
+- `tests/staff.test.ts`: Staff provisioning, role assignment, and validation.
+- `tests/auth.test.ts`: RBAC permission guards and session verification.
 
 ---
 
-# 🔄 Core Patient Workflow
+## 📦 19. Build & Deployment Instructions
 
-The complete patient journey can be represented as:
-
-```text
-Sign Up / Sign In
-       ↓
-Patient Dashboard
-       ↓
-View Healthcare Information
-       ↓
-Book Appointment
-       ↓
-Select Specialty
-       ↓
-Select Doctor
-       ↓
-Select Slot
-       ↓
-Hold Slot
-       ↓
-Confirm Appointment
-       ↓
-Pre-Visit AI Intake
-       ↓
-Doctor Consultation
-       ↓
-Prescription / Clinical Notes
-       ↓
-Post-Visit Documentation
-       ↓
-Billing
+### Production Build
+To create an optimized production build:
+```bash
+npm run build
 ```
 
----
-
-# 🔄 Core Hospital Workflow
-
-```text
-Patient
-   │
-   ├── Appointment
-   │       ↓
-   │    Doctor
-   │       ↓
-   │    Consultation
-   │       ↓
-   │    Prescription / Notes
-   │
-   ├── Billing
-   │
-   └── Pharmacy
-           ↓
-        Dispensing
-
-Nurse
-   │
-   └── Patient Assignment
-           ↓
-       Room / Care
-
-Admin
-   │
-   ├── Staff
-   ├── Patients
-   ├── Billing
-   ├── Appointments
-   └── Analytics
+### Starting Production Server
+```bash
+npm run start
 ```
 
----
-
-# 🔌 API Domains
-
-The backend exposes API routes across multiple healthcare domains.
-
-| Domain | Operations |
-|---|---|
-| `/api/appointments` | Appointment retrieval and management |
-| `/api/appointments/hold` | Temporary appointment hold |
-| `/api/appointments/confirm` | Appointment confirmation |
-| `/api/appointments/[id]/cancel` | Cancellation |
-| `/api/appointments/[id]/reschedule` | Rescheduling |
-| `/api/doctors` | Doctor discovery |
-| `/api/doctors/[id]/availability` | Doctor availability |
-| `/api/doctors/[id]/slots` | Available appointment slots |
-| `/api/specialties` | Medical specialties |
-| `/api/symptoms` | Patient symptom intake |
-| `/api/ai/previsit` | Pre-visit AI summary |
-| `/api/ai/postvisit` | Post-visit AI workflows |
-| `/api/post-visit-notes` | Clinical documentation |
-| `/api/prescriptions` | Prescription workflows |
-| `/api/staff` | Staff management |
-| `/api/billing` | Billing and invoice management |
-| `/api/dashboard/*` | Admin analytics |
-| `/api/notifications` | Notifications |
-| `/api/calendar` | Calendar integration |
-| `/api/doctor-leave` | Leave management |
+### Deployment Guidelines (Vercel / Node.js Host)
+1. Link your GitHub repository to **Vercel** or your chosen hosting provider.
+2. Set the root directory to `./`.
+3. Add all required environment variables in your deployment dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `RESEND_API_KEY`, etc.).
+4. Ensure your Supabase database migrations are applied before deploying the application.
 
 ---
 
-# 📊 Admin Analytics
-
-The analytics layer includes dedicated endpoints for:
-
-```text
-Revenue by Department
-        ↓
-Visits by Department
-        ↓
-Gender Distribution
-        ↓
-Blood Type Distribution
-        ↓
-Billing Item Type
-        ↓
-Medicine Quantity
-```
-
-All protected analytics endpoints apply authentication and administrator authorization before controlled server-side reads.
-
----
-
-# 🧠 Engineering Highlights
-
-Some of the core engineering decisions in the project include:
-
-### 1. Role-Based Architecture
-
-Instead of a single generic dashboard, each role gets a focused workspace.
-
-### 2. Domain-Oriented Services
-
-Complex appointment functionality is separated into dedicated services such as:
-
-- Booking
-- Availability
-- Slot generation
-- Slot holding
-- Leave management
-- Conflict handling
-
-### 3. Server-Enforced Slot Holds
-
-Appointment holds are not treated as a purely client-side countdown.
-
-The server controls hold validity, preventing expired client-side timers from becoming valid bookings.
-
-### 4. Idempotent Appointment Confirmation
-
-The booking confirmation flow includes idempotency handling to reduce the risk of duplicate appointment creation when requests are repeated.
-
-### 5. Ownership Checks
-
-Sensitive patient and appointment operations validate the relationship between the authenticated user and requested resources.
-
-### 6. Reusable UI System
-
-Common UI patterns are implemented through reusable components instead of repeatedly rebuilding forms, cards, dialogs, tables and status indicators.
-
-### 7. Semantic Design Tokens
-
-Status colors and UI states are represented through semantic tokens instead of scattered hardcoded colors, improving consistency and dark-mode behavior.
-
----
-
-# 📈 Project Scope
-
-The current system brings together approximately:
-
-- **5 role-based workspaces**
-- **19 integrated service/API modules**
-- Appointment management
-- Clinical workflows
-- Pharmacy inventory
-- Billing
-- Analytics
-- Notifications
-- Calendar integration
-- AI-assisted documentation
-
----
-
-# 🔮 Future Enhancements
-
-Potential future improvements include:
-
-- Real-time hospital-wide notifications
-- Advanced audit logging
-- More detailed analytics
-- Enhanced appointment reminders
-- Expanded AI decision-support workflows
-- Additional healthcare integrations
-- Production monitoring and observability
-- More extensive accessibility testing
-- Advanced reporting and export functionality
-
----
-
-# ⚠️ Important Disclaimer
-
-This project is an educational/software-engineering implementation of a Hospital Management System.
-
-It is **not a certified medical system** and should not be used as a replacement for professional medical judgment.
-
-AI-generated information is intended for assistance and information organization only. Clinical decisions must always be made by qualified healthcare professionals.
-
----
-
-# 📸 Screenshots
-
-> Add project screenshots here to showcase the UI.
-
-### Landing Page
-
-```text
-Add screenshot here
-```
-
-### Patient Dashboard
-
-```text
-Add screenshot here
-```
-
-### Appointment Booking
-
-```text
-Add screenshot here
-```
-
-### Doctor Dashboard
-
-```text
-Add screenshot here
-```
-
-### Pharmacy Dashboard
-
-```text
-Add screenshot here
-```
-
-### Admin Dashboard & Analytics
-
-```text
-Add screenshot here
-```
-
----
-
-# 🎥 Demo
-
-Add your project demonstration video here.
-
-```text
-Demo Video:
-PASTE_YOUR_LOOM_OR_YOUTUBE_LINK_HERE
-```
-
----
-
-# 📚 Learning & Engineering Goals
-
-This project was built to explore practical full-stack software engineering concepts including:
-
-- Full-stack application architecture
-- Role-based authorization
-- Secure API design
-- Database-backed workflows
-- Scheduling systems
-- Appointment state management
-- Idempotent operations
-- AI integration
-- Responsive UI architecture
-- Reusable component systems
-- Automated testing
-- Healthcare workflow modeling
-
----
-
-# ⭐ Why This Project?
-
-Traditional hospital management applications often divide operations across disconnected modules.
-
-HMS focuses on bringing these workflows together:
-
-```text
-             ┌───────────────┐
-             │    PATIENT    │
-             └───────┬───────┘
-                     │
-        ┌────────────┼────────────┐
-        ↓            ↓            ↓
-   Appointment    AI Intake     Billing
-        │            │            │
-        ↓            ↓            ↓
-     Doctor       Summary      Invoice
-        │
-        ↓
-   Prescription
-        │
-        ↓
-    Pharmacy
-        │
-        ↓
-    Patient Care
-```
-
-The goal is to provide a **single, role-aware, extensible platform** for hospital operations while demonstrating modern software engineering practices.
-
----
-
-# 👩‍💻 Author
-
-### Aditi Srivastava
-
-**B.Tech — Computer Science & Engineering**  
-VIT Bhopal University
-
-GitHub:  
-https://github.com/Ziggyyyyyyyy
-
----
-
-# ⭐ Support
-
-If you find this project useful, consider giving the repository a ⭐ on GitHub.
+## ⚠️ Medical Disclaimer
+This software is built for educational and operational management purposes. It is **not** a certified medical diagnostic device. AI-generated insights are intended solely to assist clinical workflows and must not supersede the professional judgment of qualified healthcare providers.
 
 ---
 
 ## 📄 License
-
-Add the project's applicable license here if/when a license is formally chosen for the repository.
+This project is licensed under the MIT License.

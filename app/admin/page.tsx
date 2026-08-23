@@ -112,13 +112,71 @@ export default function AdminDashboard() {
     e.preventDefault()
     setItemFeedback(null)
 
+    const billId = Number(newItem.billId)
+    const itemType = newItem.itemType as 'Medicine' | 'Treatment' | 'Room'
+    let itemIdRef = Number(newItem.itemIdRef)
+    const description = newItem.description ? newItem.description.trim() : ''
+    const quantity = Number(newItem.quantity)
+    const unitPrice = Number(newItem.unitPrice)
+
+    if (!billId || isNaN(billId) || billId <= 0) {
+      setItemFeedback({ ok: false, msg: 'Please select an invoice.' })
+      return
+    }
+
+    if (!itemType || !['Medicine', 'Treatment', 'Room'].includes(itemType)) {
+      setItemFeedback({ ok: false, msg: 'Please select an item type.' })
+      return
+    }
+
+    if (isNaN(itemIdRef) || itemIdRef <= 0) {
+      if (itemType === 'Medicine' && newItem.itemIdRef) {
+        try {
+          const medRes = await fetch('/api/medicine')
+          if (medRes.ok) {
+            const meds = await medRes.json()
+            const found = Array.isArray(meds)
+              ? meds.find(
+                  (m: any) =>
+                    m.name === newItem.itemIdRef ||
+                    String(m.medicine_id) === newItem.itemIdRef,
+                )
+              : null
+            if (found && found.medicine_id) {
+              itemIdRef = Number(found.medicine_id)
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (isNaN(itemIdRef) || itemIdRef <= 0) {
+      setItemFeedback({ ok: false, msg: 'Please select or enter a valid item.' })
+      return
+    }
+
+    if (!description) {
+      setItemFeedback({ ok: false, msg: 'Please enter a description.' })
+      return
+    }
+
+    if (isNaN(quantity) || quantity <= 0) {
+      setItemFeedback({ ok: false, msg: 'Quantity must be greater than 0.' })
+      return
+    }
+
+    if (isNaN(unitPrice) || unitPrice < 0) {
+      setItemFeedback({ ok: false, msg: 'Unit price must be 0 or greater.' })
+      return
+    }
+
     const body = {
-      bill_id: Number(newItem.billId),
-      item_type: newItem.itemType as 'Medicine' | 'Treatment' | 'Room',
-      item_id_ref: Number(newItem.itemIdRef),
-      description: newItem.description,
-      quantity: Number(newItem.quantity),
-      unit_price: Number(newItem.unitPrice),
+      bill_id: billId,
+      item_type: itemType,
+      item_id_ref: itemIdRef,
+      description,
+      quantity,
+      unit_price: unitPrice,
     }
 
     try {
@@ -130,7 +188,10 @@ export default function AdminDashboard() {
       })
       const json = await res.json()
       if (res.ok) {
-        setItemFeedback({ ok: true, msg: json.message })
+        setItemFeedback({
+          ok: true,
+          msg: `✔ ${json.message || 'Item added successfully'}`,
+        })
         setNewItem({
           billId: '',
           itemType: 'Medicine',
@@ -139,6 +200,10 @@ export default function AdminDashboard() {
           quantity: '',
           unitPrice: '',
         })
+        fetch('/api/billing', { credentials: 'include' })
+          .then((r) => (r.ok ? r.json() : []))
+          .then((data) => setInvoices(Array.isArray(data) ? data : []))
+          .catch(() => {})
       } else {
         setItemFeedback({ ok: false, msg: json.error || 'Add item failed' })
       }
@@ -217,6 +282,28 @@ export default function AdminDashboard() {
     ]).finally(() => setIsLoading(false))
   }, [])
 
+  // Smooth scroll to section when hash is present on load/refresh or hashchange
+  useEffect(() => {
+    if (isLoading) return
+    const scrollToHash = () => {
+      const hash = window.location.hash
+      if (hash) {
+        const id = hash.replace('#', '')
+        const element = document.getElementById(id)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }
+    }
+
+    const timer = setTimeout(scrollToHash, 50)
+    window.addEventListener('hashchange', scrollToHash)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('hashchange', scrollToHash)
+    }
+  }, [isLoading])
+
   function handleAdmissionChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setSelectedAdm(
       admissions.find((a) => a.admission_id === +e.target.value) || null,
@@ -245,15 +332,30 @@ export default function AdminDashboard() {
     setIsAssigning(true)
 
     try {
-      const nurseId = +form.nurseId.value
+      const nurseId = Number(form.nurseId?.value)
+      const admissionId = Number(selectedAdm.admission_id)
+      const roomId = Number(selectedAdm.room_id)
+
+      if (!admissionId || isNaN(admissionId) || !roomId || isNaN(roomId)) {
+        setFeedback({ ok: false, msg: 'Invalid admission or room ID' })
+        setIsAssigning(false)
+        return
+      }
+
+      if (!nurseId || isNaN(nurseId)) {
+        setFeedback({ ok: false, msg: 'Please select a nurse' })
+        setIsAssigning(false)
+        return
+      }
+
       const res = await fetch('/api/admin/assign-nurse', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          admission_id: selectedAdm.admission_id,
+          admission_id: admissionId,
           nurse_id: nurseId,
-          room_id: selectedAdm.room_id,
+          room_id: roomId,
         }),
       })
 
@@ -334,12 +436,38 @@ export default function AdminDashboard() {
     const form = e.currentTarget
     setUpdateFeedback(null)
 
-    const id = form.staffId.value
-    const payload: any = {
-      department_id: +form.departmentId.value,
-      staff_type: form.staffType.value,
-      license_number: form.licenseNumber.value,
-      employment_status: form.employmentStatus.value,
+    const id = (form as any)?.staffId?.value || updateData.staffId
+    if (!id) {
+      setUpdateFeedback({
+        ok: false,
+        msg: 'Please select a staff member to update.',
+      })
+      return
+    }
+
+    const departmentId =
+      (form as any)?.departmentId?.value || updateData.departmentId
+    const staffType =
+      (form as any)?.staffType?.value || updateData.staffType
+    const licenseNumber =
+      (form as any)?.licenseNumber?.value ?? updateData.licenseNumber
+    const employmentStatus =
+      (form as any)?.employmentStatus?.value ||
+      updateData.employmentStatus
+
+    const payload: any = {}
+    if (departmentId) payload.department_id = Number(departmentId)
+    if (staffType) payload.staff_type = staffType
+    if (licenseNumber !== undefined && licenseNumber !== '')
+      payload.license_number = licenseNumber
+    if (employmentStatus) payload.employment_status = employmentStatus
+
+    if (Object.keys(payload).length === 0) {
+      setUpdateFeedback({
+        ok: false,
+        msg: 'No fields to update.',
+      })
+      return
     }
 
     try {
@@ -478,22 +606,24 @@ export default function AdminDashboard() {
 
       <div className="space-y-10">
         {/* Staff & assignments */}
-        <section aria-labelledby="staff-heading" id="staff" className="scroll-mt-32">
+        <section aria-labelledby="staff-heading">
           <h2 id="staff-heading" className="sr-only">
             Staff management
           </h2>
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
-              <AssignNurseSection
-                nurses={nurses}
-                admissions={admissions}
-                selectedAdm={selectedAdm}
-                isAssigning={isAssigning}
-                feedback={feedback}
-                handleAssign={handleAssign}
-                handleAdmissionChange={handleAdmissionChange}
-              />
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div id="appointments" className="scroll-mt-32">
+                <AssignNurseSection
+                  nurses={nurses}
+                  admissions={admissions}
+                  selectedAdm={selectedAdm}
+                  isAssigning={isAssigning}
+                  feedback={feedback}
+                  handleAssign={handleAssign}
+                  handleAdmissionChange={handleAdmissionChange}
+                />
+              </div>
+              <div id="staff" className="grid grid-cols-1 gap-6 md:grid-cols-2 scroll-mt-32">
                 <CreateStaffSection
                   userList={userList}
                   createFeedback={createFeedback}
@@ -509,7 +639,7 @@ export default function AdminDashboard() {
                 />
               </div>
             </div>
-            <div className="space-y-6">
+            <div id="patients" className="space-y-6 scroll-mt-32">
               <NurseAssignmentStatusSection
                 nurses={nurses}
                 roomsByNurse={roomsByNurse}
@@ -519,7 +649,11 @@ export default function AdminDashboard() {
         </section>
 
         {/* Billing */}
-        <section aria-labelledby="billing-heading">
+        <section
+          aria-labelledby="billing-heading"
+          id="billing"
+          className="scroll-mt-32"
+        >
           <h2 id="billing-heading" className="sr-only">
             Billing management
           </h2>

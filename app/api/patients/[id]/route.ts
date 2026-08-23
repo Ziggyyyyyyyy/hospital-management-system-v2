@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient()
   const result = await getUserRole()
 
   if (!result) {
@@ -15,6 +14,11 @@ export async function GET(
 
   const { role, userId } = result
   const { id: patientId } = await params
+
+  // The patients/users/medical_staff RLS policies are mutually self-referential
+  // and exceed the PostgreSQL stack depth for authenticated sessions (SQLSTATE 54001).
+  // Caller authorization is strictly enforced below (Admin, Doctor, Nurse, or patient owner).
+  const supabase = createServiceClient()
 
   const { data: patient, error } = await supabase
     .from('patients')

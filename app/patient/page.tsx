@@ -104,11 +104,42 @@ export default function PatientDashboard() {
       const appointmentsData = await appointmentsResponse.json()
       const billingData = await billingResponse.json()
 
-      setPatientProfile(patientData)
-      setAppointments(appointmentsData)
-      setBilling(billingData)
-    } catch (err) {
-      setError('An error occurred while fetching data')
+      if (patientData && patientData.success === false) {
+        throw new Error(patientData.error?.message || 'Failed to fetch patient profile')
+      }
+      if (appointmentsData && appointmentsData.success === false) {
+        throw new Error(appointmentsData.error?.message || 'Failed to fetch appointments')
+      }
+      if (billingData && billingData.success === false) {
+        throw new Error(billingData.error?.message || 'Failed to fetch billing data')
+      }
+
+      const patientObj = patientData?.data ?? patientData
+      const apptList = Array.isArray(appointmentsData)
+        ? appointmentsData
+        : Array.isArray(appointmentsData?.data?.appointments)
+          ? appointmentsData.data.appointments
+          : Array.isArray(appointmentsData?.appointments)
+            ? appointmentsData.appointments
+            : Array.isArray(appointmentsData?.data)
+              ? appointmentsData.data
+              : []
+
+      const billList = Array.isArray(billingData)
+        ? billingData
+        : Array.isArray(billingData?.data?.billing)
+          ? billingData.data.billing
+          : Array.isArray(billingData?.data)
+            ? billingData.data
+            : Array.isArray(billingData?.billing)
+              ? billingData.billing
+              : []
+
+      setPatientProfile(patientObj)
+      setAppointments(apptList)
+      setBilling(billList)
+    } catch (err: any) {
+      setError(err?.message || 'An error occurred while fetching data')
     } finally {
       setLoading(false)
     }

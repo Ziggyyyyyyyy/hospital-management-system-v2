@@ -6,7 +6,9 @@
     "start": "next start",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:demo": "npx tsx scripts/seed-demo-dataset.ts",
+    "clean:demo": "npx tsx scripts/clean-demo-dataset.ts"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

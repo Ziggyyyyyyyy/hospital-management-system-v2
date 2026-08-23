@@ -91,6 +91,7 @@ export async function POST(req: Request) {
         created_at: new Date().toISOString(), // Set the creation timestamp
       },
     ])
+    .select()
     .single() // Insert a single record
 
   if (error) {

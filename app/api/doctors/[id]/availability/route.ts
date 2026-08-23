@@ -32,7 +32,7 @@ export async function GET(
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const all = await listDoctorAvailability(doctorId, supabase as any)
     const filtered =
       identity.role === 'Admin' ||

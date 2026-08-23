@@ -29,22 +29,28 @@ async function buildCalendarInput(
       doctor_id,
       reason_for_visit,
       timezone,
-      patients!inner (
+      start_time,
+      end_time,
+      patients (
         patient_id,
-        email,
-        first_name,
-        last_name
-      ),
-      medical_staff!appointments_doctor_id_fkey (
-        staff_id,
-        first_name,
-        last_name,
-        email,
-        departments (
-          name
+        user_id,
+        users (
+          first_name,
+          last_name
         )
       ),
-      appointment_slots!left (
+      medical_staff:doctor_id (
+        staff_id,
+        user_id,
+        departments (
+          name
+        ),
+        users (
+          first_name,
+          last_name
+        )
+      ),
+      appointment_slots (
         start_time,
         end_time
       )
@@ -55,23 +61,32 @@ async function buildCalendarInput(
 
   if (!appt) return null
 
-  const row = appt as Record<string, unknown>
-  const patient = row.patients as Record<string, unknown> | undefined
-  const doctor = row.medical_staff as Record<string, unknown> | undefined
-  const slot = row.appointment_slots as Record<string, unknown> | undefined
+  const row = appt as any
+  const patient = row.patients as any
+  const doctor = row.medical_staff as any
+  const slot = row.appointment_slots as any
 
   if (!patient || !doctor) return null
 
-  const patientEmail = patient.email as string | undefined
-  const doctorEmail = doctor.email as string | undefined
-  if (!patientEmail || !doctorEmail) return null
+  let patientEmail: string | undefined
+  let doctorEmail: string | undefined
 
-  const startTime = slot?.start_time
-    ? String(slot.start_time)
-    : new Date().toISOString()
-  const endTime = slot?.end_time
-    ? String(slot.end_time)
-    : new Date(Date.now() + 30 * 60 * 1000).toISOString()
+  if (patient.user_id) {
+    const { data: patAuth } = await supabase.auth.admin.getUserById(patient.user_id)
+    patientEmail = patAuth?.user?.email ?? `patient-${patient.patient_id}@hospital.local`
+  } else {
+    patientEmail = `patient-${patient.patient_id}@hospital.local`
+  }
+
+  if (doctor.user_id) {
+    const { data: docAuth } = await supabase.auth.admin.getUserById(doctor.user_id)
+    doctorEmail = docAuth?.user?.email ?? `doctor-${doctor.staff_id}@hospital.local`
+  } else {
+    doctorEmail = `doctor-${doctor.staff_id}@hospital.local`
+  }
+
+  const startTime = slot?.start_time || row.start_time || new Date().toISOString()
+  const endTime = slot?.end_time || row.end_time || new Date(Date.now() + 30 * 60 * 1000).toISOString()
 
   const appointment: AppointmentForCalendar = {
     appointment_id: Number(row.appointment_id),
@@ -84,16 +99,13 @@ async function buildCalendarInput(
   }
 
   const patientName =
-    [patient.first_name, patient.last_name].filter(Boolean).join(' ') ||
-    undefined
+    [patient.users?.first_name, patient.users?.last_name].filter(Boolean).join(' ') ||
+    `Patient #${patient.patient_id}`
   const doctorName =
-    [doctor.first_name, doctor.last_name].filter(Boolean).join(' ') ||
-    undefined
+    [doctor.users?.first_name, doctor.users?.last_name].filter(Boolean).join(' ') ||
+    `Dr. Staff #${doctor.staff_id}`
 
-  const departments = doctor.departments as
-    | Array<{ name: string }>
-    | undefined
-  const department = departments?.[0]?.name
+  const department = doctor.departments?.name || undefined
 
   return {
     appointment,

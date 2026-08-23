@@ -35,11 +35,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const invoices = (data as any[]).map((r: any) => ({
+  const invoices = (data ?? []).map((r: any) => ({
     bill_id: r.bill_id,
     total_price: r.total_price,
     status: r.status,
-    patient_name: `${r.patients.users.first_name} ${r.patients.users.last_name}`,
+    patient_name: r.patients?.users
+      ? `${r.patients.users.first_name || ''} ${r.patients.users.last_name || ''}`.trim()
+      : `Patient #${r.patient_id || 'Unknown'}`,
   }))
 
   return NextResponse.json(invoices, { status: 200 })

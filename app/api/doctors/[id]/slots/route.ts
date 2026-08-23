@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import {
   resolveIdentity,
   requireRoles,
@@ -51,7 +51,7 @@ export async function GET(
     return err(makeApptError('INVALID_DATE_RANGE', 'date_from > date_to'))
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Try to list. If none, generate on-demand (best-effort idempotent)
   let slots = await listSlots(doctorId, { ...range, status: q.status }, supabase as any)

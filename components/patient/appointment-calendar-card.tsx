@@ -12,28 +12,32 @@ interface Appointment {
 export default function AppointmentCalendarCard({
   appointments,
 }: {
-  appointments: {
-    visit_date: string
-    visit_status: 'Scheduled' | 'Completed' | 'Canceled'
-    medical_staff: {
-      users: {
-        last_name: string
-        first_name: string
-      }
-    }
-  }[]
+  appointments: any
 }) {
-  const scheduledAppointmentDates = appointments
-    .filter((appt) => appt.visit_status === 'Scheduled')
-    .map((appt) => parseISO(appt.visit_date))
+  const apptList: any[] = Array.isArray(appointments)
+    ? appointments
+    : Array.isArray((appointments as any)?.appointments)
+      ? (appointments as any).appointments
+      : Array.isArray((appointments as any)?.data?.appointments)
+        ? (appointments as any).data.appointments
+        : Array.isArray((appointments as any)?.data)
+          ? (appointments as any).data
+          : []
 
-  const completedAppointmentDates = appointments
-    .filter((appt) => appt.visit_status === 'Completed')
-    .map((appt) => parseISO(appt.visit_date))
+  const scheduledAppointmentDates = apptList
+    .filter((appt) => appt.visit_status === 'Scheduled' || appt.status === 'CONFIRMED' || appt.status === 'SCHEDULED' || appt.status === 'HELD')
+    .map((appt) => parseISO(appt.visit_date || appt.start_time || appt.created_at))
+    .filter((d) => !isNaN(d.getTime()))
 
-  const canceledAppointmentDates = appointments
-    .filter((appt) => appt.visit_status === 'Canceled')
-    .map((appt) => parseISO(appt.visit_date))
+  const completedAppointmentDates = apptList
+    .filter((appt) => appt.visit_status === 'Completed' || appt.status === 'COMPLETED')
+    .map((appt) => parseISO(appt.visit_date || appt.start_time || appt.created_at))
+    .filter((d) => !isNaN(d.getTime()))
+
+  const canceledAppointmentDates = apptList
+    .filter((appt) => appt.visit_status === 'Canceled' || appt.status === 'CANCELLED' || appt.status === 'CANCELED')
+    .map((appt) => parseISO(appt.visit_date || appt.start_time || appt.created_at))
+    .filter((d) => !isNaN(d.getTime()))
 
   const modifiersClassNames = {
     appointmentScheduled:

@@ -174,7 +174,7 @@ export async function GET() {
 
     // Calculate revenue
     const revenue = (revenueRes.data || []).reduce(
-      (sum, item) => sum + item.total_price,
+      (sum: number, item: any) => sum + (Number(item.total_price) || 0),
       0,
     )
 

@@ -174,7 +174,11 @@ export async function generatePostVisitSummary(
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(rawResponse)
+      const cleaned = rawResponse
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim()
+      parsed = JSON.parse(cleaned)
     } catch (parseErr) {
       const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr)
       await _insertFailedSummary(
@@ -244,42 +248,41 @@ export async function generatePostVisitSummary(
       try {
         const { data: pData } = await supabase
           .from('patients')
-          .select('patient_id, user_id, email, first_name, last_name')
+          .select('patient_id, user_id, users(first_name, last_name)')
           .eq('patient_id', String(typedNote.patient_id))
           .maybeSingle()
-        if (pData && (pData as { email?: string }).email) {
-          const p = pData as {
-            patient_id: number
-            user_id?: string | null
-            email: string
-            first_name?: string | null
-            last_name?: string | null
+
+        if (pData?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(pData.user_id)
+          const email = authUser?.user?.email
+          if (email) {
+            const usersObj = (pData as any).users
+            const patientName = [usersObj?.first_name, usersObj?.last_name].filter(Boolean).join(' ') || 'Patient'
+            const { subject, body } = buildAiSummaryReady({
+              appointment_id: Number(typedNote.appointment_id),
+              patient_name: patientName,
+              summary_kind: 'Post-Visit',
+              generated_at: generatedAt,
+            })
+            fireNotification({
+              type: 'POSTVISIT_SUMMARY_READY',
+              channel: 'EMAIL',
+              recipient: email,
+              subject,
+              body,
+              user_id: pData.user_id,
+              patient_id: Number(pData.patient_id),
+              appointment_id: Number(typedNote.appointment_id),
+              dedupe_key: buildDedupeKey([
+                'POSTVISIT_SUMMARY_READY',
+                String(typedNote.appointment_id),
+                'EMAIL',
+              ]),
+            })
           }
-          const patientName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Patient'
-          const { subject, body } = buildAiSummaryReady({
-            appointment_id: Number(typedNote.appointment_id),
-            patient_name: patientName,
-            summary_kind: 'Post-Visit',
-            generated_at: generatedAt,
-          })
-          fireNotification({
-            type: 'POSTVISIT_SUMMARY_READY',
-            channel: 'EMAIL',
-            recipient: p.email,
-            subject,
-            body,
-            user_id: p.user_id ?? undefined,
-            patient_id: p.patient_id,
-            appointment_id: Number(typedNote.appointment_id),
-            dedupe_key: buildDedupeKey([
-              'POSTVISIT_SUMMARY_READY',
-              String(typedNote.appointment_id),
-              'EMAIL',
-            ]),
-          })
         }
       } catch {
-        // swallow - never propagate notification errors
+        // swallow
       }
     })().catch(() => {})
 

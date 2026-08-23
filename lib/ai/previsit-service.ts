@@ -118,7 +118,11 @@ export async function generatePrevisitSummary(
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(rawResponse)
+      const cleaned = rawResponse
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim()
+      parsed = JSON.parse(cleaned)
     } catch (parseErr) {
       const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr)
       await _insertFailedSummary(supabase, intake, apptData.doctor_id, `JSON parse failed: ${errMsg}`, rawResponse)
@@ -145,20 +149,23 @@ export async function generatePrevisitSummary(
 
     const { data: inserted, error: insertError } = await supabase
       .from('ai_previsit_summaries')
-      .insert({
-        appointment_id: intake.appointment_id,
-        patient_id: apptData.patient_id,
-        doctor_id: apptData.doctor_id,
-        urgency: output.urgency,
-        chief_complaint: output.chief_complaint,
-        suggested_questions: output.suggested_questions as unknown as JsonArray,
-        model: PREVISIT_MODEL,
-        prompt_version: PREVISIT_PROMPT_VERSION,
-        status: 'COMPLETED',
-        raw_response: parsed as Record<string, unknown>,
-        error_message: null,
-        generated_at: generatedAt,
-      })
+      .upsert(
+        {
+          appointment_id: intake.appointment_id,
+          patient_id: apptData.patient_id,
+          doctor_id: apptData.doctor_id,
+          urgency: output.urgency,
+          chief_complaint: output.chief_complaint,
+          suggested_questions: output.suggested_questions as unknown as JsonArray,
+          model: PREVISIT_MODEL,
+          prompt_version: PREVISIT_PROMPT_VERSION,
+          status: 'COMPLETED',
+          raw_response: parsed as Record<string, unknown>,
+          error_message: null,
+          generated_at: generatedAt,
+        },
+        { onConflict: 'appointment_id' },
+      )
       .select('summary_id')
       .single()
 
@@ -173,39 +180,38 @@ export async function generatePrevisitSummary(
       try {
         const { data: pData } = await supabase
           .from('patients')
-          .select('patient_id, user_id, email, first_name, last_name')
+          .select('patient_id, user_id, users(first_name, last_name)')
           .eq('patient_id', String(apptData.patient_id))
           .maybeSingle()
-        if (pData && (pData as { email?: string }).email) {
-          const p = pData as {
-            patient_id: number
-            user_id?: string | null
-            email: string
-            first_name?: string | null
-            last_name?: string | null
+
+        if (pData?.user_id) {
+          const { data: authUser } = await supabase.auth.admin.getUserById(pData.user_id)
+          const email = authUser?.user?.email
+          if (email) {
+            const usersObj = (pData as any).users
+            const patientName = [usersObj?.first_name, usersObj?.last_name].filter(Boolean).join(' ') || 'Patient'
+            const { subject, body } = buildAiSummaryReady({
+              appointment_id: Number(intake.appointment_id),
+              patient_name: patientName,
+              summary_kind: 'Pre-Visit',
+              generated_at: generatedAt,
+            })
+            fireNotification({
+              type: 'PREVISIT_SUMMARY_READY',
+              channel: 'EMAIL',
+              recipient: email,
+              subject,
+              body,
+              user_id: pData.user_id,
+              patient_id: Number(pData.patient_id),
+              appointment_id: Number(intake.appointment_id),
+              dedupe_key: buildDedupeKey([
+                'PREVISIT_SUMMARY_READY',
+                String(intake.appointment_id),
+                'EMAIL',
+              ]),
+            })
           }
-          const patientName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Patient'
-          const { subject, body } = buildAiSummaryReady({
-            appointment_id: Number(intake.appointment_id),
-            patient_name: patientName,
-            summary_kind: 'Pre-Visit',
-            generated_at: generatedAt,
-          })
-          fireNotification({
-            type: 'PREVISIT_SUMMARY_READY',
-            channel: 'EMAIL',
-            recipient: p.email,
-            subject,
-            body,
-            user_id: p.user_id ?? undefined,
-            patient_id: p.patient_id,
-            appointment_id: Number(intake.appointment_id),
-            dedupe_key: buildDedupeKey([
-              'PREVISIT_SUMMARY_READY',
-              String(intake.appointment_id),
-              'EMAIL',
-            ]),
-          })
         }
       } catch {
         // swallow - never propagate notification errors

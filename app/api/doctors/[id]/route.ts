@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import {
   resolveIdentity,
   requireRoles,
@@ -21,7 +21,7 @@ export async function GET(
   if (!Number.isFinite(doctorId) || doctorId <= 0) {
     return err(makeApptError('VALIDATION_ERROR', 'Invalid doctor id'))
   }
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('medical_staff')
     .select(

@@ -57,8 +57,18 @@ function statusBadgeClass(status: string) {
   }
 }
 
-export default function BillingSummaryTable({ billing }: Props) {
+export default function BillingSummaryTable({ billing }: { appointments?: any; billing?: any }) {
   const [expandedRows, setExpandedRows] = useState<number[]>([])
+
+  const billList: any[] = Array.isArray(billing)
+    ? billing
+    : Array.isArray((billing as any)?.billing)
+      ? (billing as any).billing
+      : Array.isArray((billing as any)?.data?.billing)
+        ? (billing as any).data.billing
+        : Array.isArray((billing as any)?.data)
+          ? (billing as any).data
+          : []
 
   const toggleRow = (billId: number) => {
     setExpandedRows((prev) =>
@@ -90,7 +100,7 @@ export default function BillingSummaryTable({ billing }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto px-0">
-        {billing.length === 0 ? (
+        {billList.length === 0 ? (
           <div className="px-6 pb-2">
             <EmptyState
               icon={<Receipt />}
@@ -112,7 +122,7 @@ export default function BillingSummaryTable({ billing }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {billing.map(
+              {billList.map(
                 (
                   {
                     bill_id,
@@ -141,7 +151,7 @@ export default function BillingSummaryTable({ billing }: Props) {
                           BILL-{bill_id}
                         </TableCell>
                         <TableCell className="tabular-nums font-medium">
-                          ฿{total_price.toFixed(2)}
+                          ฿{Number(total_price || 0).toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -178,7 +188,7 @@ export default function BillingSummaryTable({ billing }: Props) {
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {billing_items.map((item, itemIndex) => (
+                                  {(billing_items || []).map((item: any, itemIndex: number) => (
                                     <TableRow key={item.item_id}>
                                       <TableCell className="tabular-nums text-muted-foreground">
                                         {itemIndex + 1}
@@ -188,10 +198,10 @@ export default function BillingSummaryTable({ billing }: Props) {
                                         {item.quantity}
                                       </TableCell>
                                       <TableCell className="tabular-nums">
-                                        ฿{item.unit_price.toFixed(2)}
+                                        ฿{Number(item.unit_price || 0).toFixed(2)}
                                       </TableCell>
                                       <TableCell className="tabular-nums font-medium">
-                                        ฿{item.total_price.toFixed(2)}
+                                        ฿{Number(item.total_price || 0).toFixed(2)}
                                       </TableCell>
                                     </TableRow>
                                   ))}

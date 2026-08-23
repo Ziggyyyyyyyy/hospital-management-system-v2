@@ -147,9 +147,11 @@ function UserMenu({ user }: { user: ShellUser }) {
 function ShellNavMenu({
   sections,
   isItemActive,
+  pathname,
 }: {
   sections: NavSection[]
   isItemActive: (item: NavItem) => boolean
+  pathname: string
 }) {
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -171,6 +173,12 @@ function ShellNavMenu({
                       href={navHref(item)}
                       onClick={() => {
                         if (isMobile) setOpenMobile(false)
+                        if (item.hash && pathname === item.url) {
+                          const el = document.getElementById(item.hash)
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }
+                        }
                       }}
                     >
                       <item.icon aria-hidden />
@@ -216,7 +224,11 @@ export function AppShell({
         </SidebarHeader>
 
         <SidebarContent>
-          <ShellNavMenu sections={sections} isItemActive={isItemActive} />
+          <ShellNavMenu
+            sections={sections}
+            isItemActive={isItemActive}
+            pathname={pathname}
+          />
         </SidebarContent>
 
         <SidebarFooter>

@@ -269,8 +269,8 @@ export default function DispenseButton({
                         key={record.record_id}
                         value={record.record_id}
                       >
-                        {record.patients.users.first_name}{' '}
-                        {record.patients.users.last_name} (ID:{' '}
+                        {record.patients?.users?.first_name || 'Patient'}{' '}
+                        {record.patients?.users?.last_name || ''} (ID:{' '}
                         {record.record_id})
                       </SelectItem>
                     ))}
@@ -309,8 +309,8 @@ export default function DispenseButton({
                         Patient Name
                       </p>
                       <p className="font-medium">
-                        {selectedRecordDetails.patients.users.first_name}{' '}
-                        {selectedRecordDetails.patients.users.last_name}
+                        {selectedRecordDetails.patients?.users?.first_name || 'Patient'}{' '}
+                        {selectedRecordDetails.patients?.users?.last_name || ''}
                       </p>
                     </div>
                     <div>

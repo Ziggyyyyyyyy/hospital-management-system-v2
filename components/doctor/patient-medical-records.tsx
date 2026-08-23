@@ -336,7 +336,7 @@ export function PatientMedicalRecords({
       }
 
       const response = await fetch(
-        `/api/appointments/${updatedRecord.record_id}`,
+        `/api/records/${updatedRecord.record_id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

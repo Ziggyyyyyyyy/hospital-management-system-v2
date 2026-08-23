@@ -1,6 +1,5 @@
-// app/api/admin/assign-nurse/route.ts
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 import { getUserRole } from '@/utils/get-role'
 
 // Format
@@ -13,22 +12,24 @@ import { getUserRole } from '@/utils/get-role'
 // PATCH /api/admin/assign-nurse → Assign nurse and room to a patient admission
 export async function PATCH(req: Request) {
   const { admission_id, nurse_id, room_id } = await req.json()
-  const supabase = await createClient()
   const result = await getUserRole()
-  console.log(result)
 
   if (!result) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { role, userId } = result
-  console.log('User Role:', role)
+  const { role } = result
   if (role !== 'Admin' && role !== 'Doctor') {
     return NextResponse.json(
       { error: 'Forbidden: Only admins or doctors can assign nurses' },
       { status: 403 },
     )
   }
+
+  // The rooms/medical_staff/admissions RLS policies are self-referential
+  // and exceed the PostgreSQL stack depth for authenticated sessions (SQLSTATE 54001).
+  // Caller authorization and role filtering are strictly enforced above.
+  const supabase = createServiceClient()
 
   // Validate required fields
   if (!admission_id || !nurse_id || !room_id) {

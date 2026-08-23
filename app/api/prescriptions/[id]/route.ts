@@ -50,7 +50,17 @@ export async function GET(
           duration_days,
           quantity,
           instructions,
-          created_at
+          created_at,
+          medication_reminders (
+            reminder_id,
+            prescription_item_id,
+            medicine_name,
+            dosage,
+            scheduled_at,
+            status,
+            sent_at,
+            retry_count
+          )
         ),
         appointments (
           appointment_id,
@@ -59,26 +69,16 @@ export async function GET(
         ),
         patients (
           patient_id,
-          date_of_birth,
-          gender,
-          blood_group,
-          users (first_name, last_name, email, phone)
+          blood_type,
+          emergency_contact_id,
+          users (first_name, last_name, date_of_birth, gender, phone_number)
         ),
         medical_staff (
           staff_id,
           staff_type,
-          specialty,
-          users (first_name, last_name, email)
-        ),
-        medication_reminders!medication_reminders_prescription_item_id_fkey (
-          reminder_id,
-          prescription_item_id,
-          medicine_name,
-          dosage,
-          scheduled_at,
-          status,
-          sent_at,
-          retry_count
+          license_number,
+          departments (name),
+          users (first_name, last_name)
         )
       `)
       .eq('prescription_id', prescriptionId)

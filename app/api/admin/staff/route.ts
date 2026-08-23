@@ -1,7 +1,6 @@
-// app/api/admin/staff/route.ts
 import { NextResponse } from 'next/server'
 import { getUserRole } from '@/utils/get-role'
-import { createClient } from '@/utils/supabase/server'
+import { createServiceClient } from '@/utils/supabase/service'
 
 const validStaffTypes = ['Doctor', 'Nurse', 'Pharmacist', 'Admin']
 const validEmploymentStatus = ['Active', 'On_Leave', 'Resigned', 'Retired']
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
   }
 
   const staffType = new URL(req.url).searchParams.get('type')
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   let query = supabase
     .from('medical_staff')
@@ -79,7 +78,7 @@ export async function POST(req: Request) {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Validate user_id exists in the users table
   const { data: user, error: userError } = await supabase
@@ -136,6 +135,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       },
     ])
+    .select()
     .single()
 
   if (error) {

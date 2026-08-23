@@ -96,11 +96,20 @@ export default function AddBillingItemSection({
           // The API returns an array of medicines, find the one with matching id
           let med = null
           if (Array.isArray(data)) {
-            med = data.find((m) => String(m.medicine_id || m.id) === String(newItem.itemIdRef))
-          } else if (data && (data.medicine_id || data.id)) {
-            if (String(data.medicine_id || data.id) === String(newItem.itemIdRef)) med = data
+            med = data.find(
+              (m) =>
+                String(m.medicine_id || m.id) === String(newItem.itemIdRef) ||
+                m.name === String(newItem.itemIdRef),
+            )
+          } else if (data && (data.medicine_id || data.id || data.name)) {
+            if (
+              String(data.medicine_id || data.id) === String(newItem.itemIdRef) ||
+              data.name === String(newItem.itemIdRef)
+            ) {
+              med = data
+            }
           }
-          setItemInfo(med ? { name: med.name, price: undefined } : null)
+          setItemInfo(med ? { name: med.name, price: med.unit_price } : null)
         } else if (newItem.itemType === 'Room') {
           const room = Array.isArray(data) ? data[0] : data
           setItemInfo(room ? { name: room.room_type, price: room.price_per_night } : null)
@@ -154,7 +163,14 @@ export default function AddBillingItemSection({
             </label>
             <Select
               value={newItem.itemType}
-              onValueChange={(v) => setNewItem((i: any) => ({ ...i, itemType: v }))}
+              onValueChange={(v) =>
+                setNewItem((i: any) => ({
+                  ...i,
+                  itemType: v,
+                  itemIdRef: '',
+                  unitPrice: '',
+                }))
+              }
             >
               <SelectTrigger id="ab-type" className="w-full">
                 <SelectValue placeholder="-- Select Item Type --" />
@@ -175,14 +191,33 @@ export default function AddBillingItemSection({
             {newItem.itemType === 'Medicine' ? (
               <Select
                 value={newItem.itemIdRef}
-                onValueChange={(v) => setNewItem((i: any) => ({ ...i, itemIdRef: v }))}
+                onValueChange={(v) => {
+                  const selectedMed = allMedicines.find(
+                    (m) =>
+                      String(m.medicine_id || m.id) === v || m.name === v,
+                  )
+                  const unitPrice =
+                    selectedMed?.unit_price != null
+                      ? String(selectedMed.unit_price)
+                      : ''
+                  setNewItem((i: any) => ({
+                    ...i,
+                    itemIdRef: selectedMed
+                      ? String(selectedMed.medicine_id || selectedMed.id)
+                      : v,
+                    unitPrice: unitPrice || i.unitPrice,
+                  }))
+                }}
               >
                 <SelectTrigger id="ab-item" className="w-full">
                   <SelectValue placeholder="-- Select Medicine --" />
                 </SelectTrigger>
                 <SelectContent>
                   {allMedicines.map((med) => (
-                    <SelectItem key={med.name} value={med.name}>
+                    <SelectItem
+                      key={med.medicine_id || med.id || med.name}
+                      value={String(med.medicine_id || med.id || med.name)}
+                    >
                       {med.name}
                     </SelectItem>
                   ))}
@@ -191,7 +226,20 @@ export default function AddBillingItemSection({
             ) : newItem.itemType === 'Room' ? (
               <Select
                 value={newItem.itemIdRef}
-                onValueChange={(v) => setNewItem((i: any) => ({ ...i, itemIdRef: v }))}
+                onValueChange={(v) => {
+                  const selectedRoom = allRooms.find(
+                    (r) => String(r.room_id || r.id) === v,
+                  )
+                  const price =
+                    selectedRoom?.price_per_night != null
+                      ? String(selectedRoom.price_per_night)
+                      : ''
+                  setNewItem((i: any) => ({
+                    ...i,
+                    itemIdRef: v,
+                    unitPrice: price || i.unitPrice,
+                  }))
+                }}
               >
                 <SelectTrigger id="ab-item" className="w-full">
                   <SelectValue placeholder="-- Select Room --" />
