@@ -97,7 +97,6 @@ A naive implementation such as:
 check slot availability
         ↓
 insert appointment
-
 is unsafe.
 
 Two patients can read the same available slot before either request commits.
@@ -1000,3 +999,5 @@ Secure authorization
 Database consistency
      +
 External API resilience
+
+Designed to demonstrate how a healthcare application can remain consistent and reliable even when multiple users and external services interact with the same critical workflows.
