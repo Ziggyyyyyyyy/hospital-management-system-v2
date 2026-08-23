@@ -1,190 +1,1002 @@
 # 🏥 Hospital Management System (HMS)
 
-<p align="center">
-  <strong>Full-Stack, Role-Based Healthcare Operations & Clinical Scheduling Platform</strong>
-</p>
+### Production-Oriented Healthcare Appointment, Clinical Workflow & Operations Platform
 
-<p align="center">
-  A production-oriented hospital management platform for appointment scheduling,
-  doctor availability, clinical workflows, AI-assisted documentation,
-  pharmacy management, billing, notifications, and Google Calendar integration.
-</p>
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-AI-4285F4?logo=google)](https://ai.google.dev/)
+[![Vitest](https://img.shields.io/badge/Testing-Vitest-6E9F18?logo=vitest)](https://vitest.dev/)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?logo=vercel)](https://vercel.com/)
 
-<p align="center">
+A full-stack healthcare management platform designed around **safe appointment concurrency, doctor availability and leave handling, AI-assisted clinical documentation, reliable notifications, pharmacy workflows, billing, and Google Calendar synchronization.**
 
-![Next.js](https://img.shields.io/badge/Next.js-16.3.2-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
-![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini-4285F4?logo=google)
-![Vitest](https://img.shields.io/badge/Testing-Vitest-6E9F18?logo=vitest)
-
-</p>
+The system is designed as a production-oriented implementation rather than a simple CRUD application, with particular focus on **transaction safety, failure isolation, role-based access control, and reliable external integrations.**
 
 ---
 
-## 🌐 Live Demo
+# 🌐 Live Demo
 
-**Hosted Application:**  
-https://hospital-management-system-v2-ashy.vercel.app/
+### Hosted Application
 
-**Source Code:**  
-https://github.com/Ziggyyyyyyyy/hospital-management-system-v2
+**https://hospital-management-system-v2-ashy.vercel.app**
 
-> The application is deployed on Vercel and connected to a Supabase PostgreSQL backend.
+### Source Code
 
----
+**https://github.com/Ziggyyyyyyyy/hospital-management-system-v2**
 
-# 📌 1. Project Overview
-
-Traditional hospital workflows are often fragmented across separate systems for
-appointments, doctor schedules, patient records, pharmacy inventory, billing,
-notifications, and clinical documentation.
-
-The **Hospital Management System (HMS)** provides a unified platform that connects
-these workflows through role-based workspaces and transactional backend services.
-
-The system supports five primary roles:
-
-- **Admin** — hospital operations, staff, rooms, billing and analytics
-- **Doctor** — schedules, availability, leave, consultations and prescriptions
-- **Nurse** — admissions, assigned patients and inpatient monitoring
-- **Patient** — doctor discovery, appointment booking, records and billing
-- **Pharmacist** — inventory, dispensing and stock management
-
-The platform also integrates AI-assisted pre/post-visit documentation,
-Google Calendar synchronization and asynchronous notification processing.
+The application is deployed on **Vercel** and uses **Supabase PostgreSQL and authentication**.
 
 ---
 
-# ✨ 2. Key Features
+# 🎯 1. Problem Statement
 
-### 🔐 Role-Based Access Control
+Healthcare appointment systems involve significantly more than basic appointment booking.
 
-- Supabase authentication with JWT sessions
+A reliable healthcare platform needs to handle:
+
+- Multiple patients attempting to book the same slot simultaneously
+- Temporary reservations while patients complete the booking process
+- Doctor working hours, breaks, availability and leave
+- Existing appointments affected by doctor leave
+- AI-generated clinical summaries
+- Failures from external AI and email providers
+- Appointment reminders
+- Google Calendar synchronization
+- Role-specific access to sensitive healthcare workflows
+- Pharmacy, admissions, records and billing operations
+
+The Hospital Management System brings these workflows together into a single role-based platform.
+
+### Core Design Principle
+
+> **Critical healthcare state transitions remain transactional and deterministic, while external services such as AI, email and Google Calendar are isolated so their failures do not break core appointment workflows.**
+
+---
+
+# 👥 2. User Roles
+
+The platform provides dedicated workspaces for five operational roles.
+
+| Role | Responsibilities |
+|---|---|
+| 👤 **Patient** | Doctor discovery, symptom intake, appointment booking, records, billing |
+| 👨‍⚕️ **Doctor** | Availability, leave, consultations, prescriptions and patient records |
+| 👩‍⚕️ **Nurse** | Admissions, assigned patients and inpatient workflows |
+| 💊 **Pharmacist** | Medicine inventory, dispensing and stock management |
+| 🛡️ **Admin** | Doctors, staff, rooms, billing, operations and analytics |
+
+---
+
+# ✨ 3. Key Features
+
+## 🔐 Role-Based Access Control
+
+- Supabase authentication
+- JWT-backed sessions
 - Role-specific dashboards
 - API-level authorization
 - Resource ownership checks
 - PostgreSQL Row Level Security (RLS)
+- Server-side secret handling
+- Request validation
 
-### 📅 Concurrency-Safe Appointment Scheduling
-
-- Dynamic doctor slot generation
-- Temporary 5-minute slot holds
-- PostgreSQL advisory locks
-- Row-level locking using `FOR UPDATE`
-- Atomic booking confirmation
-- Idempotency protection
-- Double-booking prevention
-
-### 👨‍⚕️ Doctor Availability & Leave Management
-
-- Recurring weekly availability
-- Working hours and break configuration
-- Slot duration configuration
-- Doctor leave management
-- Automatic conflict detection
-- Existing appointment conflict handling
-- Patient rescheduling notifications
-
-### 🤖 AI-Assisted Clinical Documentation
-
-**Pre-visit AI:**
-- Symptom analysis
-- Chief complaint generation
-- Urgency classification
-- Suggested questions for the doctor
-
-**Post-visit AI:**
-- Consultation summarization
-- Structured clinical documentation
-- Graceful failure and retry handling
-
-Google Gemini is used for AI processing with structured output validation.
-
-### 📬 Reliable Notification System
-
-- Booking confirmations
-- Appointment cancellations
-- Appointment rescheduling
-- Doctor leave conflict notifications
-- AI summary notifications
-- Notification outbox pattern
-- Failure tracking
-- Retry processing
-- Exponential backoff
-- Deduplication support
-
-### 📆 Google Calendar Integration
-
-- OAuth 2.0 authentication
-- Calendar event creation
-- Appointment rescheduling synchronization
-- Event cancellation
-- Encrypted OAuth token storage using AES-256-GCM
-
-### 💊 Pharmacy Management
-
-- Medicine inventory
-- Stock categorization
-- Low-stock monitoring
-- Prescription-based dispensing
-- Inventory transaction tracking
-- Restocking workflows
-
-### 💳 Billing
-
-- Consultation billing
-- Medicine billing
-- Room billing
-- Lab billing
-- Multi-item invoices
-- Payment status tracking
-
-### 📊 Hospital Analytics
-
-- Revenue by department
-- Visit statistics
-- Patient demographics
-- Blood-group distribution
-- Medicine consumption
-- Operational dashboard metrics
+Authorization is enforced at the API/service layer rather than relying only on frontend visibility.
 
 ---
 
-# 🏗️ 3. System Architecture
+## 📅 Concurrency-Safe Appointment Scheduling
+
+Appointment booking is the most concurrency-sensitive workflow in the application.
+
+A naive implementation such as:
 
 ```text
-                    ┌───────────────────────────┐
-                    │       Client Layer        │
-                    │ Next.js + React + Tailwind│
-                    └─────────────┬─────────────┘
-                                  │
-                                  ▼
-                    ┌───────────────────────────┐
-                    │   API / Route Handlers    │
-                    │ Auth + RBAC + Validation  │
-                    └─────────────┬─────────────┘
-                                  │
-                                  ▼
-        ┌──────────────────────────────────────────────────┐
-        │                 Domain Services                   │
-        │                                                  │
-        │ Booking & Holds     Leave & Availability         │
-        │ AI Services         Notification Outbox          │
-        │ Calendar Service    Billing & Pharmacy           │
-        │ Reminder Service    Encryption / Security        │
-        └──────────────────────┬───────────────────────────┘
-                               │
-                               ▼
-                    ┌───────────────────────────┐
-                    │       Supabase DB         │
-                    │ PostgreSQL + RLS + RPCs   │
-                    │ Locks + Transactions      │
-                    └───────────────────────────┘
+check slot availability
+        ↓
+insert appointment
 
-External Integrations:
-    Google Gemini ── AI processing
-    Resend/SMTP  ── Email notifications
-    Google Calendar ── Calendar synchronization
+is unsafe.
+
+Two patients can read the same available slot before either request commits.
+
+The system therefore uses database-level concurrency control.
+
+Booking Lifecycle
+Doctor Availability
+        │
+        ▼
+Slot Generation
+        │
+        ▼
+Patient selects slot
+        │
+        ▼
+Temporary Slot Hold
+        │
+        ├── Availability validation
+        ├── PostgreSQL advisory locking
+        ├── Hold ownership
+        └── Expiry timestamp
+        │
+        ▼
+Patient confirms booking
+        │
+        ▼
+Atomic Confirmation
+        │
+        ├── Validate hold
+        ├── Validate ownership
+        ├── Prevent duplicate confirmation
+        └── Transition slot → BOOKED
+        │
+        ▼
+Appointment Created
+Double-Booking Prevention
+
+The system uses:
+
+PostgreSQL advisory locks
+Row-level locking
+Transactional operations
+Atomic database RPCs
+Slot ownership validation
+Temporary hold expiration
+Idempotent booking confirmation
+Appointment state-transition validation
+
+This ensures simultaneous booking attempts are handled deterministically.
+
+⏱️ 4. Temporary Slot Hold Mechanism
+
+Before final appointment confirmation, a selected slot can be temporarily held.
+
+Default Hold Duration
+5 minutes
+
+The hold prevents another patient from acquiring the same slot while the current patient completes the booking process.
+
+Hold Lifecycle
+AVAILABLE
+    │
+    ▼
+HELD
+    │
+    ├───────────────┐
+    │               │
+Confirm          Expire
+    │               │
+    ▼               ▼
+ BOOKED          AVAILABLE
+
+Important properties:
+
+Hold belongs to a specific user/session
+Hold has an expiration timestamp
+Expired holds do not permanently block slots
+Confirmation validates the hold before booking
+Duplicate confirmations are protected
+
+The database layer contains atomic operations for slot holding and confirmation.
+
+👨‍⚕️ 5. Doctor Availability & Leave Management
+
+Admins can configure doctor:
+
+Specialization
+Working hours
+Break periods
+Slot duration
+Recurring availability
+Leave dates
+
+Slots are generated according to the configured availability.
+
+🚨 Doctor Leave Conflict Handling
+
+Doctor leave becomes more complex when appointments already exist for the affected date.
+
+The system does not simply mark the doctor unavailable.
+
+Instead:
+
+Doctor Leave Created
+        │
+        ▼
+Conflict Detection
+        │
+        ├── Identify affected appointments
+        ├── Block unavailable slots
+        ├── Release relevant holds
+        └── Prepare affected patients
+        │
+        ▼
+Conflict Resolution
+        │
+        ▼
+Patient Notifications
+
+This prevents a state where:
+
+Doctor = ON LEAVE
+        +
+Appointment = ACTIVE
+        +
+Patient = NOT INFORMED
+
+The leave workflow therefore explicitly handles existing appointment conflicts.
+
+🤖 6. AI-Assisted Clinical Documentation
+
+Google Gemini is integrated into two clinical documentation workflows.
+
+🧠 Pre-Visit AI Summary
+
+Before confirming an appointment, the patient can provide symptom information.
+
+The system uses the information to generate a structured pre-visit summary for the doctor.
+
+Output
+Urgency Level
+Chief Complaint
+Suggested Questions
+
+The intended output structure is:
+
+{
+  "urgency": "Low | Medium | High",
+  "chief_complaint": "...",
+  "suggested_questions": [
+    "...",
+    "...",
+    "..."
+  ]
+}
+
+The generated summary is stored in the database and associated with the appointment.
+
+The AI is used as a documentation and preparation aid, not as a replacement for clinical judgment.
+
+📝 Post-Visit AI Summary
+
+After a consultation, the doctor can provide:
+
+Clinical notes
+Diagnosis
+Treatment information
+Prescription information
+Follow-up instructions
+
+Gemini converts the clinical information into a patient-friendly summary.
+
+Output
+Visit Explanation
+Medication Schedule
+Follow-Up Steps
+Instructions
+
+The generated result is stored for later access by the patient.
+
+🛡️ 7. LLM Failure Handling
+
+AI is intentionally treated as a non-critical external dependency.
+
+An AI failure must not break the appointment or clinical workflow.
+
+The system handles scenarios such as:
+
+Missing Gemini API key
+Provider/API failure
+Network failure
+Invalid model response
+Malformed JSON
+Unexpected output format
+Schema validation failure
+AI processing timeout
+Patient AI-consent opt-out
+Failure Isolation
+Healthcare Workflow
+        │
+        ├──────────────► Core operation continues
+        │
+        ▼
+    AI Processing
+        │
+    ┌───┴────┐
+    │        │
+ SUCCESS   FAILURE
+    │        │
+    ▼        ▼
+ Persist   Record Failure
+    │        │
+    ▼        ▼
+ Continue   Graceful Fallback
+
+AI output is validated before persistence.
+
+This prevents malformed model responses from corrupting application data.
+
+📬 8. Reliable Notification System
+
+Notifications are decoupled from critical appointment transactions.
+
+Supported notifications include:
+
+Appointment booking confirmation
+Appointment cancellation
+Appointment rescheduling
+Doctor leave conflict notification
+AI summary notification
+Appointment reminders
+Medication reminders
+🔄 Notification Outbox Pattern
+
+Instead of making the main appointment transaction depend on email delivery:
+
+Appointment Transaction
+        │
+        ▼
+Notification Record
+        │
+        ▼
+Notification Processor
+        │
+    ┌───┴────┐
+    │        │
+ SUCCESS   FAILURE
+    │        │
+    ▼        ▼
+   SENT     RETRY
+              │
+              ▼
+       Exponential Backoff
+
+A provider failure therefore does not roll back a successfully created appointment.
+
+Failure Tracking
+
+Notifications can track information such as:
+
+status
+attempt count
+last attempt
+next retry
+deduplication key
+provider message ID
+
+This provides a reliable foundation for retry processing and prevents unnecessary duplicate notifications.
+
+📆 9. Google Calendar Integration
+
+The application integrates Google Calendar using OAuth 2.0.
+
+Appointment Booking
+Appointment Confirmed
+        │
+        ▼
+Google Calendar Event
+        │
+        ├── Patient
+        └── Doctor
+Rescheduling
+
+When an appointment is rescheduled, the corresponding calendar event is updated.
+
+Cancellation
+
+When an appointment is cancelled, the corresponding calendar event is removed.
+
+OAuth Security
+
+OAuth-related tokens are encrypted using:
+
+AES-256-GCM
+
+before being persisted.
+
+Google Calendar operations are isolated from the critical appointment transaction so external API failures do not invalidate the appointment itself.
+
+Detailed setup instructions:
+
+docs/GOOGLE_CALENDAR_SETUP.md
+💊 10. Pharmacy Management
+
+The pharmacy module supports:
+
+Medicine inventory
+Stock categorization
+Stock monitoring
+Low-stock detection
+Prescription-based dispensing
+Restocking workflows
+Inventory transaction tracking
+Medication reminders
+
+Medication reminders are generated according to prescription frequency.
+
+💳 11. Billing & Invoicing
+
+The billing module supports:
+
+Consultation charges
+Medicine charges
+Room charges
+Laboratory charges
+Multiple billing items
+Invoice management
+Payment status tracking
+
+Billing is integrated with the wider patient and hospital workflow.
+
+🏥 12. Admissions & Inpatient Workflows
+
+The system supports inpatient operational workflows including:
+
+Patient admission
+Room management
+Nurse assignment
+Assigned-patient workflows
+Admission status tracking
+
+This allows the platform to cover both appointment-based and inpatient operational use cases.
+
+📊 13. Hospital Analytics
+
+The admin dashboard provides operational metrics including:
+
+Revenue by department
+Visit statistics
+Patient demographics
+Gender distribution
+Blood-group distribution
+Medicine consumption
+Operational statistics
+
+Analytics are exposed through dedicated API endpoints.
+
+🏗️ 14. System Architecture
+                         ┌──────────────────────────┐
+                         │      Client Layer        │
+                         │                          │
+                         │ Next.js + React          │
+                         │ TypeScript + Tailwind    │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     API / Route Layer    │
+                         │                          │
+                         │ Auth / RBAC / Validation │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+              ┌────────────────────────────────────────────┐
+              │              Domain Services                │
+              │                                            │
+              │ Appointment & Slot Management               │
+              │ Doctor Availability & Leave                 │
+              │ AI Clinical Documentation                   │
+              │ Notification Outbox & Retry                 │
+              │ Google Calendar Integration                 │
+              │ Billing & Pharmacy                          │
+              │ Admissions & Records                        │
+              │ Medication Reminders                        │
+              └─────────────────────┬──────────────────────┘
+                                    │
+                                    ▼
+              ┌────────────────────────────────────────────┐
+              │              Supabase PostgreSQL            │
+              │                                            │
+              │ RLS / Transactions / Constraints           │
+              │ RPCs / Advisory Locks / Row Locks          │
+              │ State Transition Guards                    │
+              └─────────────────────┬──────────────────────┘
+                                    │
+               ┌────────────────────┼─────────────────────┐
+               ▼                    ▼                     ▼
+        Google Gemini          Email Provider       Google Calendar
+             AI                 Resend/etc.             OAuth/API
+🧩 15. Backend Module Structure
+Module	Responsibility
+Authentication	Identity and session management
+RBAC	Role and resource authorization
+Appointments	Booking, cancellation and rescheduling
+Availability	Doctor schedules and slot generation
+Doctor Leave	Leave management and conflict detection
+Slot Holds	Temporary reservation and expiry
+AI	Pre/post-visit intelligence
+Notifications	Outbox, delivery and retries
+Calendar	OAuth and event synchronization
+Billing	Invoice and billing workflows
+Pharmacy	Inventory and dispensing
+Admissions	Inpatient workflows
+Records	Patient clinical records
+Reminders	Appointment and medication reminders
+Analytics	Hospital operational metrics
+🗄️ 16. Database Design
+
+The application uses Supabase PostgreSQL.
+
+The database design includes:
+
+Relational tables
+PostgreSQL enums
+Foreign-key relationships
+Unique constraints
+Check constraints
+Indexes
+Row Level Security
+PostgreSQL functions
+Atomic concurrency RPCs
+Appointment state-transition protection
+Important Entities
+users
+patients
+medical_staff
+departments
+specialties
+
+doctor_availability
+doctor_leave
+appointment_slots
+slot_holds
+appointments
+
+symptom_intakes
+ai_previsit_summaries
+post_visit_notes
+post_visit_summaries
+
+medical_records
+treatments
+prescriptions
+prescription_items
+
+medicine_stock
+medicine_dispense
+medication_reminders
+
+rooms
+admissions
+
+billing
+billing_items
+
+notifications
+user_oauth_tokens
+calendar_events
+audit_logs
+
+Detailed schema:
+
+docs/DATABASE.md
+🔌 17. API Documentation
+
+The application exposes API routes covering:
+
+Authentication & Users
+User identity
+Patient profile
+Staff profile
+Admin user management
+Doctors
+Doctor discovery
+Doctor availability
+Doctor slots
+Doctor leave
+Conflict detection
+Appointments
+Slot generation
+Slot holds
+Booking
+Confirmation
+Cancellation
+Rescheduling
+Clinical Workflows
+Symptoms
+AI pre-visit summaries
+Post-visit notes
+AI post-visit summaries
+Prescriptions
+Medical records
+Hospital Operations
+Admissions
+Rooms
+Nurse assignment
+Pharmacy
+Billing
+Integrations
+Notifications
+Notification retries
+Google Calendar OAuth
+Calendar synchronization
+Analytics
+Revenue
+Visits
+Demographics
+Medicine statistics
+Department metrics
+
+Complete API reference:
+
+docs/API.md
+🧠 18. LLM Prompt Documentation
+
+AI prompt workflows are documented separately to make the LLM behavior reproducible and reviewable.
+
+docs/LLM_PROMPTS.md
+
+The documentation covers:
+
+Pre-visit prompt
+Post-visit prompt
+Input structure
+Expected output
+Validation schema
+Persistence behavior
+Failure handling
+Notification behavior
+Pre-Visit Prompt Objective
+Analyse the patient's symptoms and return:
+
+1. Urgency level
+2. Chief complaint
+3. Three suggested questions for the doctor
+Post-Visit Prompt Objective
+Convert clinical notes into a patient-friendly summary
+containing medication schedule and follow-up steps.
+🔐 19. Security Design
+
+Healthcare systems require careful handling of authentication, authorization and sensitive data.
+
+Security measures include:
+
+Supabase authentication
+JWT-backed sessions
+Role-based authorization
+PostgreSQL Row Level Security
+Resource ownership checks
+Server-side authorization
+Zod request validation
+Idempotency protection
+PostgreSQL advisory locks
+Transactional state transitions
+Encrypted OAuth token storage
+Audit logging
+Environment-based secret management
+Secret Management
+
+Real credentials are never committed to source control.
+
+The repository contains:
+
+.env.example
+
+only as a configuration template.
+
+Actual credentials belong in local environment configuration or the deployment platform's environment variable manager.
+
+⚙️ 20. Background Processing
+
+The application separates recurring/background operations from critical user transactions.
+
+Notification Retry Processing
+/api/notifications/retry
+
+Handles failed notification attempts.
+
+Stale Slot Holds
+
+Expired appointment holds are cleaned so abandoned booking sessions do not permanently reserve slots.
+
+Medication Reminders
+
+Prescription frequency is used to determine medication reminder processing.
+
+This separation improves reliability because slow or unavailable external providers do not block core healthcare operations.
+
+🛠️ 21. Technology Stack
+Frontend
+Next.js 16
+React 19
+TypeScript
+Tailwind CSS
+Backend
+Next.js Route Handlers
+Server-side domain services
+Zod validation
+Database & Authentication
+Supabase
+PostgreSQL
+Row Level Security
+PostgreSQL RPCs
+Transactions
+Advisory Locks
+AI
+Google Gemini
+@google/genai
+Structured output validation
+Integrations
+Resend / email provider
+Google Calendar API
+Google OAuth 2.0
+Testing & Quality
+Vitest
+TypeScript
+ESLint
+Deployment
+Vercel
+🚀 22. Local Setup
+Prerequisites
+
+Install:
+
+Node.js
+npm
+Git
+Supabase project
+Clone Repository
+git clone https://github.com/Ziggyyyyyyyy/hospital-management-system-v2.git
+cd hospital-management-system-v2
+Install Dependencies
+npm install
+Configure Environment Variables
+
+Create a local environment file.
+
+macOS / Linux
+cp .env.example .env.local
+Windows PowerShell
+Copy-Item .env.example .env.local
+
+Then configure the required values inside:
+
+.env.local
+
+Never commit .env.local.
+
+🔑 23. Environment Variables
+
+All required configuration variables are documented in:
+
+.env.example
+Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+AI
+GEMINI_API_KEY=
+Email
+EMAIL_PROVIDER=
+RESEND_API_KEY=
+SENDGRID_API_KEY=
+EMAIL_FROM=
+Google Calendar
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
+Encryption
+ENCRYPTION_MASTER_KEY=
+ENCRYPTION_SALT=
+Application
+NEXT_PUBLIC_SITE_NAME=
+NEXT_PUBLIC_SITE_URL=
+
+APPOINTMENT_HOLD_DURATION_SECONDS=
+APPOINTMENT_SLOT_GENERATION_DAYS_AHEAD=
+APPOINTMENT_DEFAULT_TIMEZONE=
+APPOINTMENT_REMINDER_HOURS_BEFORE=
+MEDICATION_REMINDER_LOOKAHEAD_MINUTES=
+
+Never put real API keys, passwords, OAuth secrets or encryption keys inside .env.example or Git.
+
+📆 24. Google Calendar Setup
+
+Google Calendar integration requires:
+
+Google Cloud project
+Google Calendar API
+OAuth consent configuration
+OAuth 2.0 credentials
+Authorized redirect URI
+Required environment variables
+
+Detailed instructions are available in:
+
+docs/GOOGLE_CALENDAR_SETUP.md
+🧪 25. Testing & Quality Checks
+
+Run tests:
+
+npm test
+
+Run TypeScript validation:
+
+npx tsc --noEmit
+
+Run linting:
+
+npm run lint
+
+Create production build:
+
+npm run build
+
+The production build validates:
+
+TypeScript compilation
+Next.js compilation
+Route generation
+Static page generation
+Server-side modules
+Production bundling
+📦 26. Demo Dataset
+
+The repository contains scripts for creating and cleaning demonstration data.
+
+Seed demo data:
+
+npx tsx scripts/seed-demo-dataset.ts
+
+Clean demo data:
+
+npx tsx scripts/clean-demo-dataset.ts
+
+A SQL seed file is also available:
+
+supabase/demo_seed.sql
+
+These files allow the application to be demonstrated without manually creating every record.
+
+🏗️ 27. Production Deployment
+
+The application is deployed using Vercel.
+
+Deployment Flow
+GitHub Repository
+       │
+       ▼
+Vercel
+       │
+       ├── Install Dependencies
+       ├── Build Next.js Application
+       ├── Inject Environment Variables
+       └── Deploy
+              │
+              ▼
+        Production HMS
+Deployment Steps
+Import the GitHub repository into Vercel.
+Select the Next.js framework preset.
+Configure environment variables.
+Configure Supabase credentials.
+Configure Gemini credentials if AI is enabled.
+Configure email provider credentials.
+Configure Google OAuth redirect URI if Calendar integration is enabled.
+Deploy.
+📚 28. Project Documentation
+File	Purpose
+README.md	Complete project overview and setup
+docs/API.md	API endpoint documentation
+docs/DATABASE.md	Database schema and database logic
+docs/LLM_PROMPTS.md	AI prompt workflows and validation
+docs/GOOGLE_CALENDAR_SETUP.md	Google OAuth and Calendar setup
+docs/SYSTEM_DESIGN.md	Key architecture and reliability decisions
+.env.example	Environment configuration template
+📐 29. System Design Highlights
+
+The system design focuses on four high-risk workflows.
+
+Double-Booking Prevention
+
+Appointment booking is protected using transactional database operations, advisory locking, row-level locking, temporary slot holds and idempotent confirmation.
+
+Doctor Leave Conflicts
+
+Doctor leave triggers conflict detection for existing appointments. Affected appointments are identified and patients can be notified rather than leaving inconsistent scheduling state.
+
+Slot Holds
+
+Selected slots are temporarily held for a limited duration. Holds are ownership-aware and expire automatically, preventing abandoned booking sessions from blocking availability.
+
+Notification Failure Handling
+
+Notifications are persisted independently from core transactions. Failed deliveries are tracked and retried using backoff, ensuring email provider failures do not roll back successful appointments.
+
+Full system design:
+
+docs/SYSTEM_DESIGN.md
+🎥 30. Assignment Deliverables
+
+This repository includes the required assignment deliverables:
+
+1. Complete Source Code
+
+Full application source code is available in the GitHub repository.
+
+2. Documentation
+
+Included:
+
+README
+.env.example
+API documentation
+Database schema
+LLM prompts
+Google Calendar setup
+System design
+3. Hosted Application
+
+https://hospital-management-system-v2-ashy.vercel.app
+
+4. System Design
+
+The system design write-up covers:
+
+Double-booking prevention
+Doctor leave conflict handling
+Slot hold mechanism
+Notification failure handling
+📌 31. Engineering Decisions
+
+This project intentionally focuses on engineering problems that are easy to get wrong in real-world systems.
+
+Concurrency
+
+Availability checks alone are insufficient for appointment booking. Database-level locking and transactions are used to protect critical state transitions.
+
+Temporary Reservations
+
+Slot holds prevent users from losing a selected slot during the confirmation flow while ensuring abandoned holds eventually expire.
+
+Reliability
+
+External email, AI and Calendar services are isolated from core appointment transactions.
+
+AI Safety
+
+LLM output is validated before being stored, and AI failures are handled gracefully.
+
+Data Consistency
+
+Appointment and slot state transitions are protected through transactional database logic.
+
+Security
+
+Authentication, RBAC, RLS, ownership validation, encrypted OAuth credentials and server-side secrets protect sensitive workflows.
+
+Integration Resilience
+
+External services are treated as unreliable dependencies rather than trusted components of the core transaction.
+
+⚠️ 32. Clinical Disclaimer
+
+This project is an educational software implementation and is not a medical diagnosis or treatment system.
+
+AI-generated summaries are intended only as documentation and communication aids.
+
+Clinical decisions remain the responsibility of qualified healthcare professionals.
+
+👩‍💻 Author
+Aditi Srivastava
+
+B.Tech Computer Science & Engineering
+VIT Bhopal University
+
+⭐ Project Focus
+
+This project goes beyond basic CRUD functionality by focusing on:
+
+Concurrency
+     +
+Reliability
+     +
+AI-assisted workflows
+     +
+Secure authorization
+     +
+Database consistency
+     +
+External API resilience
